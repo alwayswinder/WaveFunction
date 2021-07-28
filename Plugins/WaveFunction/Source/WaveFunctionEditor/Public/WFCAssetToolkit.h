@@ -33,8 +33,15 @@ public:
 protected:
 	TSharedRef<SDockTab> SpawnTab_Input(const FSpawnTabArgs& Args);
 	TSharedRef<SDockTab> SpawnTab_Output(const FSpawnTabArgs& Args);
+	void RefreshOutputTab();
 
 	TSharedPtr<SVerticalBox> OutputVbx;
+	TSharedPtr<SVerticalBox> InputVbx;
+	TSharedPtr<FTabManager> TabManager;
+
+	/**/
+	void ReFillInputResHbxs();
+	void ReFillOutputResHbxs();
 
 private:
 	/**/

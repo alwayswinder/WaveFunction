@@ -1,7 +1,11 @@
 #include "WFCAssetToolkit.h"
 #include "SSingleObjectDetailsPanel.h"
 #include "EditorStyleSet.h"
-
+#include "WFCAsset.h"
+#include "Slate\SMeshWidget.h"
+#include "Slate\SlateVectorArtData.h"
+#include "Brushes\SlateBoxBrush.h"
+#include "Widgets\Layout\SScrollBox.h"
 
 #define LOCTEXT_NAMESPACE "WFCEditor"
 
@@ -50,6 +54,7 @@ FWFCAssetToolkit::FWFCAssetToolkit()
 
 void FWFCAssetToolkit::RegisterTabSpawners(const TSharedRef<FTabManager>& InTabManager)
 {
+	//TabManager = InTabManager;
 	WorkspaceMenuCategory = InTabManager->AddLocalWorkspaceMenuCategory(LOCTEXT("WorkspaceMenu_WFCEditor", "WFC Editor"));
 	auto WorkspaceMenuCategoryRef = WorkspaceMenuCategory.ToSharedRef();
 
@@ -64,11 +69,16 @@ void FWFCAssetToolkit::RegisterTabSpawners(const TSharedRef<FTabManager>& InTabM
 		.SetDisplayName(LOCTEXT("OutputTab", "Output"))
 		.SetGroup(WorkspaceMenuCategoryRef)
 		.SetIcon(FSlateIcon(FEditorStyle::GetStyleSetName(), "LevelEditor.Tabs.Modes"));
+
+	if (WFCAsset)
+	{
+		WFCAsset->PropertyChange.AddRaw(this, &FWFCAssetToolkit::RefreshOutputTab);
+	}
 }
 
 void FWFCAssetToolkit::UnregisterTabSpawners(const TSharedRef<FTabManager>& InTabManager)
 {
-	FAssetEditorToolkit::RegisterTabSpawners(InTabManager);
+	FAssetEditorToolkit::UnregisterTabSpawners(InTabManager);
 }
 
 FName FWFCAssetToolkit::GetToolkitFName() const
@@ -143,11 +153,31 @@ void FWFCAssetToolkit::Initialize(class UWFCAsset* InNewAsset, const EToolkitMod
 TSharedRef<SDockTab> FWFCAssetToolkit::SpawnTab_Input(const FSpawnTabArgs& Args)
 {
 	TSharedPtr<FWFCAssetToolkit> WFCEditorPtr = SharedThis(this);
+	InputVbx = SNew(SVerticalBox);
+	ReFillInputResHbxs();
+
+	/*InputVbx->AddSlot()
+		.AutoHeight()
+		.HAlign(HAlign_Fill)
+		.Padding(2,5,2,5)
+		[
+			SNew(SWFCPropertiesTabBody, WFCEditorPtr)
+		];*/
+	
 	return SNew(SDockTab)
 		.Icon(FEditorStyle::GetBrush("LevelEditor.Tabs.Details"))
 		.Label(LOCTEXT("DetailsTab_Title", "Details"))
 		[
-			SNew(SWFCPropertiesTabBody, WFCEditorPtr)
+			SNew(SScrollBox)
+			+SScrollBox::Slot()
+			[
+				InputVbx.ToSharedRef()
+			]
+			+SScrollBox::Slot()
+			.Padding(2, 5, 2, 5)
+			[
+				SNew(SWFCPropertiesTabBody, WFCEditorPtr)
+			]
 		];
 }
 
@@ -155,32 +185,120 @@ TSharedRef<SDockTab> FWFCAssetToolkit::SpawnTab_Output(const FSpawnTabArgs& Args
 {
 	OutputVbx = SNew(SVerticalBox);
 
+	ReFillOutputResHbxs();
+
+	return SNew(SDockTab)
+		.ContentPadding(20)
+		[
+			SNew(SVerticalBox)
+			+SVerticalBox::Slot()
+			.FillHeight(1.0)
+			.VAlign(VAlign_Center)
+			.HAlign(HAlign_Center)
+			[
+				OutputVbx.ToSharedRef()
+			]
+		];
+}
+
+void FWFCAssetToolkit::RefreshOutputTab()
+{
+	ReFillInputResHbxs();
+	ReFillOutputResHbxs();
+	/*if (TabManager)
+	{
+		TSharedPtr<SDockTab> OutputTab = TabManager->FindExistingLiveTab(FWFCAssetToolkitTabs::OutputTabID);
+		if (OutputTab.IsValid())
+		{
+			OutputTab->FlashTab();
+		}
+	}*/
+}
+
+void FWFCAssetToolkit::ReFillInputResHbxs()
+{
+	InputVbx->ClearChildren();
 	if (WFCAsset)
 	{
-		for (int i=0; i<WFCAsset->OutputRows; i++)
+		int32 RowEach = 8;
+		WFCAsset->ReFillBrushes();
+		int32 Rows = (WFCAsset->InputRes.Num() - 1) / RowEach;
+
+		for (int32 r=0; r<=Rows; r++)
 		{
-			TSharedPtr<SHorizontalBox> OutputHbx = SNew(SHorizontalBox);
-			for (int j=0; j<WFCAsset->OutputColumns; j++)
+			TSharedPtr<SHorizontalBox> TmpHbx = SNew(SHorizontalBox);
+
+			for (int32 c = 0; c < RowEach && r * Rows + c < WFCAsset->InputRes.Num(); c++)
 			{
-				OutputHbx->AddSlot()
-					.AutoWidth()
-					.VAlign(VAlign_Center)
-					[
-						SNew(SButton)
-					];
+				FSlateBrush* Brush = WFCAsset->GetBrushByIndex(r * RowEach + c);
+				if (Brush)
+				{
+					TmpHbx->AddSlot()
+						.AutoWidth()
+						.VAlign(VAlign_Center)
+						[
+							SNew(SButton)
+							.VAlign(VAlign_Fill)
+							.HAlign(HAlign_Fill)
+							.ContentPadding(0)
+							.Content()
+							[
+								SNew(SImage)
+								.Image(Brush)
+							]
+						];
+				}
+			}
+			InputVbx->AddSlot()
+				.AutoHeight()
+				.HAlign(HAlign_Left)
+				[
+					TmpHbx.ToSharedRef()
+				];
+		}
+	}
+}
+
+void FWFCAssetToolkit::ReFillOutputResHbxs()
+{
+	OutputVbx->ClearChildren();
+	if (WFCAsset)
+	{
+		for (int32 r = 0; r < WFCAsset->OutputRows; r++)
+		{
+			TSharedPtr<SHorizontalBox> TmpHbx = SNew(SHorizontalBox);
+			
+			for (int32 c = 0; c < WFCAsset->OutputColumns; c++)
+			{
+				FSlateBrush* Brush = WFCAsset->GetBrushByRowAndCloumns(r, c);
+				if (Brush)
+				{
+					TmpHbx->AddSlot()
+						.AutoWidth()
+						.VAlign(VAlign_Center)
+						.Padding(0)
+						[
+							SNew(SButton)
+							.VAlign(VAlign_Fill)
+							.HAlign(HAlign_Fill)
+							.ContentPadding(0)
+							.Content()
+							[
+								SNew(SImage)
+								.Image(Brush)
+							]
+						];
+				}
 			}
 			OutputVbx->AddSlot()
 				.AutoHeight()
 				.HAlign(HAlign_Center)
+				.Padding(0)
 				[
-					OutputHbx.ToSharedRef()
+					TmpHbx.ToSharedRef()
 				];
 		}
 	}
-	return SNew(SDockTab)
-		[
-			OutputVbx.ToSharedRef()
-		];
 }
 
 #undef LOCTEXT_NAMESPACE

@@ -45,6 +45,7 @@ public class WaveFunctionEditor : ModuleRules
                 "KismetWidgets",
                 "EditorStyle",
 				"InputCore",
+				"UMG",
 			}
             );
 		
