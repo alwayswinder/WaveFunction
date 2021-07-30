@@ -315,15 +315,18 @@ void FWFCAssetToolkit::ReFillOutputResHbxs()
 						.AutoWidth()
 						.VAlign(VAlign_Center)
 						.Padding(0)
+						
 						[
-							SNew(SButton)
+							SNew(SBorder)
 							.VAlign(VAlign_Fill)
 							.HAlign(HAlign_Fill)
-							.ContentPadding(0)
-							.Content()
+							.Padding(0)
 							[
-								SNew(SImage)
-								.Image(Brush)
+								SNew(SMyButton)
+								.WFCAsset(WFCAsset)
+								.IsOutput(true)
+								.RowIndex(r)
+								.ColumnIndex(c)
 							]
 						];
 				}
@@ -342,20 +345,68 @@ void FWFCAssetToolkit::ReFillOutputResHbxs()
 
 void SMyButton::Construct(const FArguments& InArgs)
 {
+	WFCAsset = InArgs._WFCAsset.Get();
+	BrushIndex = InArgs._BrushIndex.Get();
+	IsOutput = InArgs._IsOutput.Get();
+	RowIndex = InArgs._RowIndex.Get();
+	ColumnIndex = InArgs._ColumnIndex.Get();
+	FSlateBrush* Brush;
+	if (IsOutput)
+	{
+		Brush = WFCAsset->GetBrushOutputByRowAndCloumns(RowIndex, ColumnIndex);
+	}
+	else
+	{
+		Brush = WFCAsset->GetBrushInputByIndex(BrushIndex);
+	}
+	FButtonStyle* MyButtonStyle = new FButtonStyle();
+	const FButtonStyle& NoramStyle = FCoreStyle::Get().GetWidgetStyle< FButtonStyle >("Button");
+	MyButtonStyle->SetNormal(NoramStyle.Normal);
+	MyButtonStyle->SetHovered(NoramStyle.Hovered);
+	MyButtonStyle->SetPressed(NoramStyle.Pressed);
+	MyButtonStyle->SetDisabled(NoramStyle.Disabled);
+	MyButtonStyle->SetNormalPadding(FMargin(0));
+	MyButtonStyle->SetPressedPadding(FMargin(0));
+
 	ChildSlot
 		[
-			SAssignNew(Button, SButton)
-			.OnHovered(this, &SMyButton::OnHovered)
-			.OnUnhovered(this, &SMyButton::OnUnHovered)
+			SAssignNew(Border, SBorder)
+			.Padding(1)
+			.VAlign(VAlign_Fill)
+			.HAlign(HAlign_Fill)
+			[
+				SAssignNew(Button, SButton)
+				.OnHovered(this, &SMyButton::OnHovered)
+				.OnUnhovered(this, &SMyButton::OnUnHovered)
+				.OnPressed(this, &SMyButton::OnPressed)
+				.OnReleased(this, &SMyButton::OnRealsed)
+				.ButtonStyle(MyButtonStyle)
+				.ContentPadding(0)
+				.Content()
+				[
+					SNew(SImage)
+					.Image(Brush)
+				]
+			]
 		];
 }
 
 void SMyButton::OnHovered()
 {
-	Button->SetColorAndOpacity(FLinearColor::Green);
+	Button->SetColorAndOpacity(FLinearColor(0.2, 0.2, 1, 1));
 }
 
 void SMyButton::OnUnHovered()
+{
+	Button->SetColorAndOpacity(FLinearColor::White);
+}
+
+void SMyButton::OnPressed()
+{
+	Button->SetColorAndOpacity(FLinearColor::Green);
+}
+
+void SMyButton::OnRealsed()
 {
 	Button->SetColorAndOpacity(FLinearColor::White);
 }

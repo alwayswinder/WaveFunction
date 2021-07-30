@@ -10,14 +10,27 @@ class SMyButton : public SCompoundWidget
 {
 public:
 	SLATE_BEGIN_ARGS(SMyButton) {}
+	SLATE_ATTRIBUTE(UWFCAsset*, WFCAsset)
+	SLATE_ATTRIBUTE(int32, BrushIndex)
+	SLATE_ATTRIBUTE(bool, IsOutput)
+	SLATE_ATTRIBUTE(int32, RowIndex)
+	SLATE_ATTRIBUTE(int32, ColumnIndex)
 	SLATE_END_ARGS()
 
 	void Construct(const FArguments& InArgs);
 protected:
 	void OnHovered();
 	void OnUnHovered();
+	void OnPressed();
+	void OnRealsed();
 private:
 	TSharedPtr<class SButton> Button;
+	TSharedPtr<class SBorder> Border;
+	UWFCAsset* WFCAsset;
+	int32 BrushIndex;
+	bool IsOutput;
+	int32 RowIndex;
+	int32 ColumnIndex;
 };
 
 namespace FWFCAssetToolkitTabs
