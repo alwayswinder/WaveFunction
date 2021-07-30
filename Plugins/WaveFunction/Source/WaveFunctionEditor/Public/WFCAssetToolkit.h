@@ -4,6 +4,21 @@
 #include "UObject/GCObject.h"
 #include "Toolkits/AssetEditorToolkit.h"
 
+class UWFCAsset;
+
+class SMyButton : public SCompoundWidget
+{
+public:
+	SLATE_BEGIN_ARGS(SMyButton) {}
+	SLATE_END_ARGS()
+
+	void Construct(const FArguments& InArgs);
+protected:
+	void OnHovered();
+	void OnUnHovered();
+private:
+	TSharedPtr<class SButton> Button;
+};
 
 namespace FWFCAssetToolkitTabs
 {
@@ -24,26 +39,27 @@ public:
 	virtual FText GetBaseToolkitName() const override;
 	virtual FString GetWorldCentricTabPrefix() const override;
 	virtual FLinearColor GetWorldCentricTabColorScale() const override;
+	virtual bool OnRequestClose()override;
+
 	// FSerializableObject interface
 	virtual void AddReferencedObjects(FReferenceCollector& Collector) override;
 	/**/
-	void Initialize(class UWFCAsset* InNewAsset, const EToolkitMode::Type InMode, const TSharedPtr<class IToolkitHost>
+	void Initialize(UWFCAsset* InNewAsset, const EToolkitMode::Type InMode, const TSharedPtr<class IToolkitHost>
 		EditWithinLevelEditor);
 	UWFCAsset* GetWFCAssetEdited() const { return WFCAsset; }
 protected:
 	TSharedRef<SDockTab> SpawnTab_Input(const FSpawnTabArgs& Args);
 	TSharedRef<SDockTab> SpawnTab_Output(const FSpawnTabArgs& Args);
-	void RefreshOutputTab();
+	void RefreshTabs();
 
 	TSharedPtr<SVerticalBox> OutputVbx;
 	TSharedPtr<SVerticalBox> InputVbx;
-	TSharedPtr<FTabManager> TabManager;
-
 	/**/
 	void ReFillInputResHbxs();
 	void ReFillOutputResHbxs();
-
 private:
 	/**/
 	UWFCAsset* WFCAsset;
+	FDelegateHandle PropertyChangeHandle;
+	TSharedPtr<SDockTab> OutputTab;
 };

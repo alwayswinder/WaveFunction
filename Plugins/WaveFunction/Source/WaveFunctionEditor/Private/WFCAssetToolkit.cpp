@@ -6,6 +6,7 @@
 #include "Slate\SlateVectorArtData.h"
 #include "Brushes\SlateBoxBrush.h"
 #include "Widgets\Layout\SScrollBox.h"
+#include "WFCInputProcessor.h"
 
 #define LOCTEXT_NAMESPACE "WFCEditor"
 
@@ -54,7 +55,6 @@ FWFCAssetToolkit::FWFCAssetToolkit()
 
 void FWFCAssetToolkit::RegisterTabSpawners(const TSharedRef<FTabManager>& InTabManager)
 {
-	//TabManager = InTabManager;
 	WorkspaceMenuCategory = InTabManager->AddLocalWorkspaceMenuCategory(LOCTEXT("WorkspaceMenu_WFCEditor", "WFC Editor"));
 	auto WorkspaceMenuCategoryRef = WorkspaceMenuCategory.ToSharedRef();
 
@@ -72,7 +72,7 @@ void FWFCAssetToolkit::RegisterTabSpawners(const TSharedRef<FTabManager>& InTabM
 
 	if (WFCAsset)
 	{
-		WFCAsset->PropertyChange.AddRaw(this, &FWFCAssetToolkit::RefreshOutputTab);
+		PropertyChangeHandle = WFCAsset->PropertyChange.AddRaw(this, &FWFCAssetToolkit::RefreshTabs);
 	}
 }
 
@@ -101,6 +101,13 @@ FLinearColor FWFCAssetToolkit::GetWorldCentricTabColorScale() const
 	return FLinearColor::Green;
 }
 
+bool FWFCAssetToolkit::OnRequestClose()
+{
+	WFCAsset->PropertyChange.Remove(PropertyChangeHandle);
+	FWFCInputProcessor::Get().RemoveTab(OutputTab);
+	return  true;
+}
+
 void FWFCAssetToolkit::AddReferencedObjects(FReferenceCollector& Collector)
 {
 	Collector.AddReferencedObject(WFCAsset);
@@ -110,6 +117,8 @@ void FWFCAssetToolkit::Initialize(class UWFCAsset* InNewAsset, const EToolkitMod
 {
 	GEditor->GetEditorSubsystem<UAssetEditorSubsystem>()->CloseOtherEditors(InNewAsset, this);
 	WFCAsset = InNewAsset;
+	/*没地方调用了，构造函数WFC->InputRes还没数据*/
+	WFCAsset->InitSetting();
 
 	const TSharedRef<FTabManager::FLayout> WFCLayout = 
 		FTabManager::NewLayout("Standalone_WFCEditor_Layout_v1")
@@ -186,22 +195,52 @@ TSharedRef<SDockTab> FWFCAssetToolkit::SpawnTab_Output(const FSpawnTabArgs& Args
 	OutputVbx = SNew(SVerticalBox);
 
 	ReFillOutputResHbxs();
-
-	return SNew(SDockTab)
+	OutputTab = SNew(SDockTab)
 		.ContentPadding(20)
 		[
 			SNew(SVerticalBox)
+			+SVerticalBox::Slot()
+			.AutoHeight()
+			.HAlign(HAlign_Left)
+			[
+				SNew(SHorizontalBox)
+				+SHorizontalBox::Slot()
+				.AutoWidth()
+				.VAlign(VAlign_Center)
+				[
+					SNew(SButton)
+				]
+				+ SHorizontalBox::Slot()
+				.AutoWidth()
+				.VAlign(VAlign_Center)
+				[
+					SNew(SButton)
+				]
+			]
 			+SVerticalBox::Slot()
 			.FillHeight(1.0)
 			.VAlign(VAlign_Center)
 			.HAlign(HAlign_Center)
 			[
-				OutputVbx.ToSharedRef()
+				SNew(SScrollBox)
+				.Orientation(Orient_Horizontal)
+				+SScrollBox::Slot()
+				[
+					SNew(SScrollBox)
+					.FlowDirectionPreference(EFlowDirectionPreference::RightToLeft)
+					+SScrollBox::Slot()
+					[
+						OutputVbx.ToSharedRef()
+					]
+				]
 			]
 		];
+	OutputTab->SetTag("OutputTab");
+	FWFCInputProcessor::Get().AddNewTab(OutputTab, WFCAsset);
+	return OutputTab.ToSharedRef();
 }
 
-void FWFCAssetToolkit::RefreshOutputTab()
+void FWFCAssetToolkit::RefreshTabs()
 {
 	ReFillInputResHbxs();
 	ReFillOutputResHbxs();
@@ -221,7 +260,6 @@ void FWFCAssetToolkit::ReFillInputResHbxs()
 	if (WFCAsset)
 	{
 		int32 RowEach = 8;
-		WFCAsset->ReFillBrushes();
 		int32 Rows = (WFCAsset->InputRes.Num() - 1) / RowEach;
 
 		for (int32 r=0; r<=Rows; r++)
@@ -230,7 +268,7 @@ void FWFCAssetToolkit::ReFillInputResHbxs()
 
 			for (int32 c = 0; c < RowEach && r * Rows + c < WFCAsset->InputRes.Num(); c++)
 			{
-				FSlateBrush* Brush = WFCAsset->GetBrushByIndex(r * RowEach + c);
+				FSlateBrush* Brush = WFCAsset->GetBrushInputByIndex(r * RowEach + c);
 				if (Brush)
 				{
 					TmpHbx->AddSlot()
@@ -270,7 +308,7 @@ void FWFCAssetToolkit::ReFillOutputResHbxs()
 			
 			for (int32 c = 0; c < WFCAsset->OutputColumns; c++)
 			{
-				FSlateBrush* Brush = WFCAsset->GetBrushByRowAndCloumns(r, c);
+				FSlateBrush* Brush = WFCAsset->GetBrushOutputByRowAndCloumns(r, c);
 				if (Brush)
 				{
 					TmpHbx->AddSlot()
@@ -299,6 +337,27 @@ void FWFCAssetToolkit::ReFillOutputResHbxs()
 				];
 		}
 	}
+}
+
+
+void SMyButton::Construct(const FArguments& InArgs)
+{
+	ChildSlot
+		[
+			SAssignNew(Button, SButton)
+			.OnHovered(this, &SMyButton::OnHovered)
+			.OnUnhovered(this, &SMyButton::OnUnHovered)
+		];
+}
+
+void SMyButton::OnHovered()
+{
+	Button->SetColorAndOpacity(FLinearColor::Green);
+}
+
+void SMyButton::OnUnHovered()
+{
+	Button->SetColorAndOpacity(FLinearColor::White);
 }
 
 #undef LOCTEXT_NAMESPACE

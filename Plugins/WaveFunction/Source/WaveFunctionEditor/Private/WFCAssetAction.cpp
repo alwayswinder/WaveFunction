@@ -1,6 +1,7 @@
 #include "WFCAssetAction.h"
 #include "WFCAsset.h"
 #include "WFCAssetToolkit.h"
+#include "WFCInputProcessor.h"
 
 FWFCAssetAction::FWFCAssetAction(uint32 InAssetCategory)
 	: WFCAssetCategory(InAssetCategory)

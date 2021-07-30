@@ -2,6 +2,8 @@
 
 UWFCAsset::UWFCAsset()
 {
+	BrushIndexSelected = -1;
+
 	for (int r=0; r<OutputRows;r++)
 	{
 		TArray<int32> TmpArray;
@@ -23,7 +25,6 @@ UWFCAsset::UWFCAsset()
 		OutputInitTexture = Cast<UTexture2D>(TextureObject);
 	}
 	OutputInitBrush.SetResourceObject(OutputInitTexture);
-	OutputInitBrush.ImageSize = FVector2D(BrushSize, BrushSize);
 }
 
 void UWFCAsset::InitResBase(TArray<FAssetData>& InResBase)
@@ -38,20 +39,30 @@ void UWFCAsset::InitResBase(TArray<FAssetData>& InResBase)
 	}
 }
 
-FSlateBrush* UWFCAsset::GetBrushByIndex(int32 Index)
+void UWFCAsset::InitSetting()
 {
-	if (Brushes.IsValidIndex(Index))
+	OutputInitBrush.ImageSize = FVector2D(BrushSize, BrushSize);
+	ReFillBrushes();
+}
+
+FSlateBrush* UWFCAsset::GetBrushInputByIndex(int32 Index)
+{
+	if (BrushesInput.IsValidIndex(Index))
 	{
-		return &Brushes[Index];
+		return &BrushesInput[Index];
 	}
 	return nullptr;
 }
 
-FSlateBrush* UWFCAsset::GetBrushByRowAndCloumns(int32 r, int32 c)
+FSlateBrush* UWFCAsset::GetBrushOutputByRowAndCloumns(int32 r, int32 c)
 {
 	if (OutputIndexList.IsValidIndex(r) && OutputIndexList[r].IsValidIndex(c))
 	{
-		FSlateBrush* ResultBrush = GetBrushByIndex(OutputIndexList[r][c]);
+		FSlateBrush* ResultBrush = nullptr;
+		if (BrushesOutput.IsValidIndex(OutputIndexList[r][c]))
+		{
+			ResultBrush = &BrushesOutput[OutputIndexList[r][c]];
+		}
 		if (!ResultBrush)
 		{
 			ResultBrush = &OutputInitBrush;
@@ -63,14 +74,71 @@ FSlateBrush* UWFCAsset::GetBrushByRowAndCloumns(int32 r, int32 c)
 
 void UWFCAsset::ReFillBrushes()
 {
-	Brushes.Empty();
+	BrushesInput.Empty();
+	BrushesOutput.Empty();
+
 	for (auto Texture : InputRes)
 	{
-		FSlateBrush TempBrush;
-		TempBrush.SetResourceObject(Texture);
+		FSlateBrush TempBrushInput;
+		TempBrushInput.SetResourceObject(Texture);
 		//Brush.ImageSize = FVector2D(Texture->GetSizeX(), Texture->GetSizeY());
-		TempBrush.ImageSize = FVector2D(BrushSize, BrushSize);
-		Brushes.Add(TempBrush);
+		TempBrushInput.ImageSize = FVector2D(64, 64);
+		BrushesInput.Add(TempBrushInput);
+
+		FSlateBrush TempBrushOutput;
+		TempBrushOutput.SetResourceObject(Texture);
+		TempBrushOutput.ImageSize = FVector2D(BrushSize, BrushSize);
+		BrushesOutput.Add(TempBrushOutput);
+	}
+	if (BrushesInput.Num() > 0 && BrushIndexSelected == -1)
+	{
+		BrushIndexSelected = 0;
+	}
+}
+
+
+void UWFCAsset::BrushIndexSelectedChange(int32 NewIndex)
+{
+	BrushIndexSelected = NewIndex;
+}
+
+void UWFCAsset::BrushSizeChange(FString ChangeType)
+{
+	if (ChangeType == "Add")
+	{
+		BrushSize += 1;
+	}
+	else if(ChangeType == "Sub" && BrushSize > 0)
+	{
+		BrushSize -= 1;
+	}
+	ReSizeBrushesOutput();
+	//PropertyChange.Broadcast();
+}
+
+
+void UWFCAsset::ReSizeBrushesOutput()
+{
+	OutputInitBrush.ImageSize = FVector2D(BrushSize, BrushSize);
+
+	for (auto Brush : BrushesOutput)
+	{
+		Brush.ImageSize = FVector2D(BrushSize, BrushSize);
+	}
+}
+
+void UWFCAsset::ReFillOutputIndexList()
+{
+	OutputIndexList.Empty();
+
+	for (int r = 0; r < OutputRows; r++)
+	{
+		TArray<int32> TmpArray;
+		for (int c = 0; c < OutputColumns; c++)
+		{
+			TmpArray.Add(-1);
+		}
+		OutputIndexList.Add(TmpArray);
 	}
 }
 
@@ -80,6 +148,20 @@ void UWFCAsset::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEve
 	if (PropertyChangedEvent.Property)
 		//&& PropertyChangedEvent.Property->GetFName() == GET_MEMBER_NAME_CHECKED(UWFCAsset, InputRes))
 	{
+		if (PropertyChangedEvent.Property->GetFName() == GET_MEMBER_NAME_CHECKED(UWFCAsset, InputRes))
+		{
+			ReFillBrushes();
+		}
+		else if (PropertyChangedEvent.Property->GetFName() == GET_MEMBER_NAME_CHECKED(UWFCAsset, BrushSize))
+		{
+			ReSizeBrushesOutput();
+		}
+		else if (PropertyChangedEvent.Property->GetFName() == GET_MEMBER_NAME_CHECKED(UWFCAsset, OutputRows)
+			|| PropertyChangedEvent.Property->GetFName() == GET_MEMBER_NAME_CHECKED(UWFCAsset, OutputColumns))
+		{
+			ReFillOutputIndexList();
+		}
+
 		PropertyChange.Broadcast();
 	}
 }

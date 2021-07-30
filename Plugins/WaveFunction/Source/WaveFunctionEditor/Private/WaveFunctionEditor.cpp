@@ -2,6 +2,7 @@
 
 #include "WaveFunctionEditor.h"
 #include "WFCAssetAction.h"
+#include "WFCInputProcessor.h"
 
 #define LOCTEXT_NAMESPACE "FWaveFunctionEditorModule"
 
@@ -18,13 +19,14 @@ void FWaveFunctionEditorModule::StartupModule()
 		AssetTools.RegisterAssetTypeActions(Action.ToSharedRef());
 	}
 
+	FWFCInputProcessor::Create();
 }
 
 void FWaveFunctionEditorModule::ShutdownModule()
 {
 	// This function may be called during shutdown to clean up your module.  For modules that support dynamic reloading,
 	// we call this function before unloading the module.
-
+	FWFCInputProcessor::Get().Cleanup();
 }
 
 #undef LOCTEXT_NAMESPACE

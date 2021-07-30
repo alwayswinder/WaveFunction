@@ -15,10 +15,13 @@ public:
 	UWFCAsset();
 
 	void InitResBase(TArray<FAssetData>& InResBase);
-public:
-	FSlateBrush* GetBrushByIndex(int32 Index);
-	FSlateBrush* GetBrushByRowAndCloumns(int32 r, int32 c);
+	void InitSetting();
 	void ReFillBrushes();
+	void BrushIndexSelectedChange(int32 NewIndex);
+	void BrushSizeChange(FString ChangeType = "Add");
+public:
+	FSlateBrush* GetBrushInputByIndex(int32 Index);
+	FSlateBrush* GetBrushOutputByRowAndCloumns(int32 r, int32 c);
 	/**/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="WFC")
 	int32 OutputRows = 10;
@@ -33,9 +36,16 @@ public:
 	/**/
 private:
 	/**/
-	TArray<FSlateBrush> Brushes;
+	TArray<FSlateBrush> BrushesInput;
+	TArray<FSlateBrush> BrushesOutput;
+
 	TArray<TArray<int32>> OutputIndexList;
 	UTexture2D* OutputInitTexture;
 	FSlateBrush OutputInitBrush;
+	int32 BrushIndexSelected;
+	/***/
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
+
+	void ReSizeBrushesOutput();
+	void ReFillOutputIndexList();
 };
