@@ -5,11 +5,10 @@
 #include "Toolkits/AssetEditorToolkit.h"
 
 class UWFCAsset;
-
-class SMyButton : public SCompoundWidget
+class SMyTileItem : public SCompoundWidget
 {
 public:
-	SLATE_BEGIN_ARGS(SMyButton) {}
+	SLATE_BEGIN_ARGS(SMyTileItem) {}
 	SLATE_ATTRIBUTE(UWFCAsset*, WFCAsset)
 	SLATE_ATTRIBUTE(int32, BrushIndex)
 	SLATE_ATTRIBUTE(bool, IsOutput)
@@ -23,6 +22,7 @@ protected:
 	void OnUnHovered();
 	void OnPressed();
 	void OnRealsed();
+	void OnNewBrushSelect();
 private:
 	TSharedPtr<class SButton> Button;
 	TSharedPtr<class SBorder> Border;
@@ -31,6 +31,7 @@ private:
 	bool IsOutput;
 	int32 RowIndex;
 	int32 ColumnIndex;
+	bool IsSelected;
 };
 
 namespace FWFCAssetToolkitTabs
@@ -70,6 +71,8 @@ protected:
 	/**/
 	void ReFillInputResHbxs();
 	void ReFillOutputResHbxs();
+	void OnSavePressed();
+
 private:
 	/**/
 	UWFCAsset* WFCAsset;

@@ -3,17 +3,6 @@
 UWFCAsset::UWFCAsset()
 {
 	BrushIndexSelected = -1;
-
-	for (int r=0; r<OutputRows;r++)
-	{
-		TArray<int32> TmpArray;
-		for (int c=0; c<OutputColumns;c++)
-		{
-			TmpArray.Add(-1);
-		}
-		OutputIndexList.Add(TmpArray);
-	}
-
 	FSoftObjectPath TextureAsset(TEXT("Texture2D'/WaveFunction/Texture/Tile/medievalTile_58.medievalTile_58'"));
 	UObject* TextureObject = TextureAsset.ResolveObject();
 	if (!TextureObject)
@@ -41,6 +30,15 @@ void UWFCAsset::InitResBase(TArray<FAssetData>& InResBase)
 
 void UWFCAsset::InitSetting()
 {
+	for (int r = 0; r < OutputRows; r++)
+	{
+		TArray<int32> TmpArray;
+		for (int c = 0; c < OutputColumns; c++)
+		{
+			TmpArray.Add(-1);
+		}
+		OutputIndexList.Add(TmpArray);
+	}
 	OutputInitBrush.ImageSize = FVector2D(BrushSize, BrushSize);
 	ReFillBrushes();
 }
@@ -70,6 +68,63 @@ FSlateBrush* UWFCAsset::GetBrushOutputByRowAndCloumns(int32 r, int32 c)
 		return ResultBrush;
 	}
 	return nullptr;
+}
+
+void UWFCAsset::SetBrushOutputByRowAndCloumns(int32 r, int32 c)
+{
+	if (OutputIndexList.IsValidIndex(r) && OutputIndexList[r].IsValidIndex(c))
+	{
+		OutputIndexList[r][c] = BrushIndexSelected;
+	}
+	PropertyChange.Broadcast();
+}
+
+void UWFCAsset::SaveCurrentOutPutAsTemplate()
+{
+	TemplateIndexList.Empty();
+	int32 minr = OutputRows;
+	int32 maxr = 0;
+	int32 minc = OutputColumns;
+	int32 maxc = 0;
+	for (int r=0; r<OutputRows; r++)
+	{
+		for (int c=0; c<OutputColumns; c++)
+		{
+			if (OutputIndexList[r][c] != -1)
+			{
+				if (r < minr)
+				{
+					minr = r;
+				}
+				if (r > maxr)
+				{
+					maxr = r;
+				}
+				if (c < minc)
+				{
+					minc = c;
+				}
+				if (c > maxc)
+				{
+					maxc = c;
+				}
+			}
+		}
+	}
+	for (int r = minr; r<=maxr; r++)
+	{
+		TArray<int32> TempArray;
+		for (int c= minc; c<=maxc; c++)
+		{
+			TempArray.Add(OutputIndexList[r][c]);
+		}
+		TemplateIndexList.Add(TempArray);
+	}
+	OutputIndexList = TemplateIndexList;
+	OutputRows = maxr - minr + 1;
+	OutputColumns = maxc - minc + 1;
+	PropertyChange.Broadcast();
+
 }
 
 void UWFCAsset::ReFillBrushes()
@@ -102,6 +157,11 @@ void UWFCAsset::BrushIndexSelectedChange(int32 NewIndex)
 	BrushIndexSelected = NewIndex;
 }
 
+int32 UWFCAsset::GetBrushIndexSelected()
+{
+	return BrushIndexSelected;
+}
+
 void UWFCAsset::BrushSizeChange(FString ChangeType)
 {
 	if (ChangeType == "Add")
@@ -121,7 +181,7 @@ void UWFCAsset::ReSizeBrushesOutput()
 {
 	OutputInitBrush.ImageSize = FVector2D(BrushSize, BrushSize);
 
-	for (auto Brush : BrushesOutput)
+	for (auto& Brush : BrushesOutput)
 	{
 		Brush.ImageSize = FVector2D(BrushSize, BrushSize);
 	}

@@ -209,12 +209,15 @@ TSharedRef<SDockTab> FWFCAssetToolkit::SpawnTab_Output(const FSpawnTabArgs& Args
 				.VAlign(VAlign_Center)
 				[
 					SNew(SButton)
+					.Text(FText::FromString("Paint"))
 				]
 				+ SHorizontalBox::Slot()
 				.AutoWidth()
 				.VAlign(VAlign_Center)
 				[
 					SNew(SButton)
+					.Text(FText::FromString("Save"))
+					.OnPressed(this, &FWFCAssetToolkit::OnSavePressed)
 				]
 			]
 			+SVerticalBox::Slot()
@@ -242,7 +245,7 @@ TSharedRef<SDockTab> FWFCAssetToolkit::SpawnTab_Output(const FSpawnTabArgs& Args
 
 void FWFCAssetToolkit::RefreshTabs()
 {
-	ReFillInputResHbxs();
+	//ReFillInputResHbxs();
 	ReFillOutputResHbxs();
 	/*if (TabManager)
 	{
@@ -268,24 +271,22 @@ void FWFCAssetToolkit::ReFillInputResHbxs()
 
 			for (int32 c = 0; c < RowEach && r * Rows + c < WFCAsset->InputRes.Num(); c++)
 			{
-				FSlateBrush* Brush = WFCAsset->GetBrushInputByIndex(r * RowEach + c);
-				if (Brush)
-				{
-					TmpHbx->AddSlot()
-						.AutoWidth()
-						.VAlign(VAlign_Center)
+				int32 BrushIndex =  r * RowEach + c;
+				TmpHbx->AddSlot()
+					.AutoWidth()
+					.VAlign(VAlign_Center)
+					[
+						SNew(SBorder)
+						.VAlign(VAlign_Fill)
+						.HAlign(HAlign_Fill)
+						.Padding(0)
 						[
-							SNew(SButton)
-							.VAlign(VAlign_Fill)
-							.HAlign(HAlign_Fill)
-							.ContentPadding(0)
-							.Content()
-							[
-								SNew(SImage)
-								.Image(Brush)
-							]
-						];
-				}
+							SNew(SMyTileItem)
+							.WFCAsset(WFCAsset)
+							.IsOutput(false)
+							.BrushIndex(BrushIndex)
+						]
+					];
 			}
 			InputVbx->AddSlot()
 				.AutoHeight()
@@ -308,28 +309,23 @@ void FWFCAssetToolkit::ReFillOutputResHbxs()
 			
 			for (int32 c = 0; c < WFCAsset->OutputColumns; c++)
 			{
-				FSlateBrush* Brush = WFCAsset->GetBrushOutputByRowAndCloumns(r, c);
-				if (Brush)
-				{
-					TmpHbx->AddSlot()
-						.AutoWidth()
-						.VAlign(VAlign_Center)
+				TmpHbx->AddSlot()
+					.AutoWidth()
+					.VAlign(VAlign_Center)
+					.Padding(0)
+					[
+						SNew(SBorder)
+						.VAlign(VAlign_Fill)
+						.HAlign(HAlign_Fill)
 						.Padding(0)
-						
 						[
-							SNew(SBorder)
-							.VAlign(VAlign_Fill)
-							.HAlign(HAlign_Fill)
-							.Padding(0)
-							[
-								SNew(SMyButton)
-								.WFCAsset(WFCAsset)
-								.IsOutput(true)
-								.RowIndex(r)
-								.ColumnIndex(c)
-							]
-						];
-				}
+							SNew(SMyTileItem)
+							.WFCAsset(WFCAsset)
+							.IsOutput(true)
+							.RowIndex(r)
+							.ColumnIndex(c)
+						]
+					];
 			}
 			OutputVbx->AddSlot()
 				.AutoHeight()
@@ -343,7 +339,12 @@ void FWFCAssetToolkit::ReFillOutputResHbxs()
 }
 
 
-void SMyButton::Construct(const FArguments& InArgs)
+void FWFCAssetToolkit::OnSavePressed()
+{
+	WFCAsset->SaveCurrentOutPutAsTemplate();
+}
+
+void SMyTileItem::Construct(const FArguments& InArgs)
 {
 	WFCAsset = InArgs._WFCAsset.Get();
 	BrushIndex = InArgs._BrushIndex.Get();
@@ -354,61 +355,110 @@ void SMyButton::Construct(const FArguments& InArgs)
 	if (IsOutput)
 	{
 		Brush = WFCAsset->GetBrushOutputByRowAndCloumns(RowIndex, ColumnIndex);
+		FButtonStyle* MyButtonStyle = new FButtonStyle();
+		const FButtonStyle& NoramStyle = FCoreStyle::Get().GetWidgetStyle< FButtonStyle >("Button");
+		MyButtonStyle->SetNormal(NoramStyle.Normal);
+		MyButtonStyle->SetHovered(NoramStyle.Hovered);
+		MyButtonStyle->SetPressed(NoramStyle.Pressed);
+		MyButtonStyle->SetDisabled(NoramStyle.Disabled);
+		MyButtonStyle->SetNormalPadding(FMargin(0));
+		MyButtonStyle->SetPressedPadding(FMargin(0));
+
+		ChildSlot
+			[
+				SAssignNew(Border, SBorder)
+				.Padding(1)
+				.VAlign(VAlign_Fill)
+				.HAlign(HAlign_Fill)
+				[
+					SAssignNew(Button, SButton)
+					.OnHovered(this, &SMyTileItem::OnHovered)
+					.OnUnhovered(this, &SMyTileItem::OnUnHovered)
+					.OnPressed(this, &SMyTileItem::OnPressed)
+					.OnReleased(this, &SMyTileItem::OnRealsed)
+					.ButtonStyle(MyButtonStyle)
+					.ContentPadding(0)
+					.Content()
+					[
+						SNew(SImage)
+						.Image(Brush)
+					]
+				]
+			];
 	}
 	else
 	{
 		Brush = WFCAsset->GetBrushInputByIndex(BrushIndex);
-	}
-	FButtonStyle* MyButtonStyle = new FButtonStyle();
-	const FButtonStyle& NoramStyle = FCoreStyle::Get().GetWidgetStyle< FButtonStyle >("Button");
-	MyButtonStyle->SetNormal(NoramStyle.Normal);
-	MyButtonStyle->SetHovered(NoramStyle.Hovered);
-	MyButtonStyle->SetPressed(NoramStyle.Pressed);
-	MyButtonStyle->SetDisabled(NoramStyle.Disabled);
-	MyButtonStyle->SetNormalPadding(FMargin(0));
-	MyButtonStyle->SetPressedPadding(FMargin(0));
-
-	ChildSlot
-		[
-			SAssignNew(Border, SBorder)
-			.Padding(1)
-			.VAlign(VAlign_Fill)
-			.HAlign(HAlign_Fill)
+		ChildSlot
 			[
+
 				SAssignNew(Button, SButton)
-				.OnHovered(this, &SMyButton::OnHovered)
-				.OnUnhovered(this, &SMyButton::OnUnHovered)
-				.OnPressed(this, &SMyButton::OnPressed)
-				.OnReleased(this, &SMyButton::OnRealsed)
-				.ButtonStyle(MyButtonStyle)
+				.OnHovered(this, &SMyTileItem::OnHovered)
+				.OnUnhovered(this, &SMyTileItem::OnUnHovered)
+				.OnPressed(this, &SMyTileItem::OnPressed)
+				.OnReleased(this, &SMyTileItem::OnRealsed)
 				.ContentPadding(0)
 				.Content()
 				[
 					SNew(SImage)
 					.Image(Brush)
 				]
-			]
-		];
+			];
+	}
+	
 }
 
-void SMyButton::OnHovered()
+void SMyTileItem::OnHovered()
 {
 	Button->SetColorAndOpacity(FLinearColor(0.2, 0.2, 1, 1));
 }
 
-void SMyButton::OnUnHovered()
+void SMyTileItem::OnUnHovered()
 {
-	Button->SetColorAndOpacity(FLinearColor::White);
+	if (!IsSelected)
+	{
+		Button->SetColorAndOpacity(FLinearColor::White);
+	}
+	else
+	{
+		Button->SetColorAndOpacity(FLinearColor::Green);
+	}
 }
 
-void SMyButton::OnPressed()
+void SMyTileItem::OnPressed()
 {
 	Button->SetColorAndOpacity(FLinearColor::Green);
+	if (IsOutput)
+	{
+		WFCAsset->SetBrushOutputByRowAndCloumns(RowIndex, ColumnIndex);
+	}
+	else
+	{
+		if (WFCAsset->GetBrushIndexSelected() != BrushIndex)
+		{
+			WFCAsset->BrushIndexSelectedChange(BrushIndex);
+			if (WFCAsset->LastSelected)
+			{
+				WFCAsset->LastSelected->OnNewBrushSelect();
+			}
+			WFCAsset->LastSelected = this;
+		}	IsSelected = true;
+	}
+	
 }
 
-void SMyButton::OnRealsed()
+void SMyTileItem::OnRealsed()
+{
+	if (IsOutput)
+	{
+		Button->SetColorAndOpacity(FLinearColor::White);
+	}
+}
+
+void SMyTileItem::OnNewBrushSelect()
 {
 	Button->SetColorAndOpacity(FLinearColor::White);
+	IsSelected = false;
 }
 
 #undef LOCTEXT_NAMESPACE
