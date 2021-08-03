@@ -5,10 +5,10 @@
 #include "Toolkits/AssetEditorToolkit.h"
 
 class UWFCAsset;
-class SMyTileItem : public SCompoundWidget
+class SMyOutputTileItem : public SCompoundWidget
 {
 public:
-	SLATE_BEGIN_ARGS(SMyTileItem) {}
+	SLATE_BEGIN_ARGS(SMyOutputTileItem) {}
 	SLATE_ATTRIBUTE(UWFCAsset*, WFCAsset)
 	SLATE_ATTRIBUTE(int32, BrushIndex)
 	SLATE_ATTRIBUTE(bool, IsOutput)
@@ -33,11 +33,34 @@ private:
 	int32 ColumnIndex;
 	bool IsSelected;
 };
+class SMyTilesSettingItem : public SCompoundWidget
+{
+public:
+	SLATE_BEGIN_ARGS(SMyTilesSettingItem) {}
+	SLATE_ATTRIBUTE(UWFCAsset*, WFCAsset)
+	SLATE_ATTRIBUTE(int32, BrushIndex)
+	SLATE_END_ARGS()
+
+	void Construct(const FArguments& InArgs);
+protected:
+	TArray<TSharedPtr<FString>> ComboBoxFilterOptions;
+	int32 SelectedComboBoxFilterOptions;
+	void ComboBoxWidgetSelectionChanged(TSharedPtr<FString> NewSelection, ESelectInfo::Type SelectInfo);
+	TSharedRef<SWidget> ComboBoxDetailFilterWidget(TSharedPtr<FString> InItem);
+	FText GetSelectedComboBoxDetailFilterTextLabel() const;
+
+private:
+	TSharedPtr<class SComboBox<TSharedPtr<FString>>> Combox;
+	UWFCAsset* WFCAsset;
+	int32 BrushIndex;
+};
 
 namespace FWFCAssetToolkitTabs
 {
 	static const FName AppIdentifier("FWCAssetEditorApp");
 	static const FName InputTabID("Input");
+	static const FName TilesSettingTabID("TilesSetting");
+	static const FName NeighborsSettingTabID("NeighborsSetting");
 	static const FName OutputTabID("Output");
 }
 
@@ -63,19 +86,31 @@ public:
 	UWFCAsset* GetWFCAssetEdited() const { return WFCAsset; }
 protected:
 	TSharedRef<SDockTab> SpawnTab_Input(const FSpawnTabArgs& Args);
+	TSharedRef<SDockTab> SpawnTab_TilesSetting(const FSpawnTabArgs& Args);
+	TSharedRef<SDockTab> SpawnTab_NeighborsSetting(const FSpawnTabArgs& Args);
 	TSharedRef<SDockTab> SpawnTab_Output(const FSpawnTabArgs& Args);
-	void RefreshTabs();
+	void RefreshInputTab();
+	void RefreshOutputTab();
 
 	TSharedPtr<SVerticalBox> OutputVbx;
 	TSharedPtr<SVerticalBox> InputVbx;
+	TSharedPtr<SVerticalBox> TilesSettingVbx;
+	TSharedPtr<SVerticalBox> NeighborsSettingVbx;
+
 	/**/
 	void ReFillInputResHbxs();
 	void ReFillOutputResHbxs();
-	void OnSavePressed();
+
+	void TilsSettingGenerate();
+	void TilsSettingSave();
+	void NeighborsSettingGenerate();
+	void NeighborsSettingSave();
 
 private:
 	/**/
 	UWFCAsset* WFCAsset;
-	FDelegateHandle PropertyChangeHandle;
+	FDelegateHandle PropertyChangeHandleInput;
+	FDelegateHandle PropertyChangeHandleOutput;
+
 	TSharedPtr<SDockTab> OutputTab;
 };

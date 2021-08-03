@@ -65,6 +65,16 @@ void FWFCAssetToolkit::RegisterTabSpawners(const TSharedRef<FTabManager>& InTabM
 		.SetGroup(WorkspaceMenuCategoryRef)
 		.SetIcon(FSlateIcon(FEditorStyle::GetStyleSetName(), "LevelEditor.Tabs.Details"));
 
+	InTabManager->RegisterTabSpawner(FWFCAssetToolkitTabs::TilesSettingTabID, FOnSpawnTab::CreateSP(this, &FWFCAssetToolkit::SpawnTab_TilesSetting))
+		.SetDisplayName(LOCTEXT("TilesSettingTab", "TilesSetting"))
+		.SetGroup(WorkspaceMenuCategoryRef)
+		.SetIcon(FSlateIcon(FEditorStyle::GetStyleSetName(), "LevelEditor.Tabs.Details"));
+
+	InTabManager->RegisterTabSpawner(FWFCAssetToolkitTabs::NeighborsSettingTabID, FOnSpawnTab::CreateSP(this, &FWFCAssetToolkit::SpawnTab_NeighborsSetting))
+		.SetDisplayName(LOCTEXT("NeighborsSettingTab", "NeighborsSetting"))
+		.SetGroup(WorkspaceMenuCategoryRef)
+		.SetIcon(FSlateIcon(FEditorStyle::GetStyleSetName(), "LevelEditor.Tabs.Details"));
+
 	InTabManager->RegisterTabSpawner(FWFCAssetToolkitTabs::OutputTabID, FOnSpawnTab::CreateSP(this, &FWFCAssetToolkit::SpawnTab_Output))
 		.SetDisplayName(LOCTEXT("OutputTab", "Output"))
 		.SetGroup(WorkspaceMenuCategoryRef)
@@ -72,7 +82,8 @@ void FWFCAssetToolkit::RegisterTabSpawners(const TSharedRef<FTabManager>& InTabM
 
 	if (WFCAsset)
 	{
-		PropertyChangeHandle = WFCAsset->PropertyChange.AddRaw(this, &FWFCAssetToolkit::RefreshTabs);
+		PropertyChangeHandleInput = WFCAsset->PropertyChangeInput.AddRaw(this, &FWFCAssetToolkit::RefreshInputTab);
+		PropertyChangeHandleOutput = WFCAsset->PropertyChangeOutput.AddRaw(this, &FWFCAssetToolkit::RefreshOutputTab);
 	}
 }
 
@@ -103,7 +114,9 @@ FLinearColor FWFCAssetToolkit::GetWorldCentricTabColorScale() const
 
 bool FWFCAssetToolkit::OnRequestClose()
 {
-	WFCAsset->PropertyChange.Remove(PropertyChangeHandle);
+	WFCAsset->PropertyChangeInput.Remove(PropertyChangeHandleInput);
+	WFCAsset->PropertyChangeOutput.Remove(PropertyChangeHandleOutput);
+
 	FWFCInputProcessor::Get().RemoveTab(OutputTab);
 	return  true;
 }
@@ -147,9 +160,20 @@ void FWFCAssetToolkit::Initialize(class UWFCAsset* InNewAsset, const EToolkitMod
 				)
 				->Split
 				(
+					/*left*/
+					FTabManager::NewStack()
+					->SetSizeCoefficient(0.2f)
+					->SetHideTabWell(true)
+					->AddTab(FWFCAssetToolkitTabs::TilesSettingTabID, ETabState::OpenedTab)
+					->AddTab(FWFCAssetToolkitTabs::NeighborsSettingTabID, ETabState::OpenedTab)
+					->SetForegroundTab(FWFCAssetToolkitTabs::TilesSettingTabID)
+				)
+				->Split
+				(
 					/*right*/
 					FTabManager::NewStack()
-					->SetSizeCoefficient(0.7f)
+					->SetSizeCoefficient(0.5f)
+					->SetHideTabWell(true)
 					->AddTab(FWFCAssetToolkitTabs::OutputTabID, ETabState::OpenedTab)
 				)
 			)
@@ -157,6 +181,7 @@ void FWFCAssetToolkit::Initialize(class UWFCAsset* InNewAsset, const EToolkitMod
 
 	InitAssetEditor(InMode, EditWithinLevelEditor, FWFCAssetToolkitTabs::AppIdentifier, WFCLayout, true, true, InNewAsset);
 	RegenerateMenusAndToolbars();
+	TilsSettingGenerate();
 }
 
 TSharedRef<SDockTab> FWFCAssetToolkit::SpawnTab_Input(const FSpawnTabArgs& Args)
@@ -190,6 +215,68 @@ TSharedRef<SDockTab> FWFCAssetToolkit::SpawnTab_Input(const FSpawnTabArgs& Args)
 		];
 }
 
+TSharedRef<SDockTab> FWFCAssetToolkit::SpawnTab_TilesSetting(const FSpawnTabArgs& Args)
+{
+	return SNew(SDockTab)
+		.Icon(FEditorStyle::GetBrush("LevelEditor.Tabs.Details"))
+		.Label(LOCTEXT("TilesTab_Title", "TilesSetting"))
+		[
+			SNew(SVerticalBox)
+			+SVerticalBox::Slot()
+			.AutoHeight()
+			.HAlign(HAlign_Left)
+			[
+				SNew(SHorizontalBox)
+				+SHorizontalBox::Slot()
+				.AutoWidth()
+				.HAlign(HAlign_Left)
+				[
+					SNew(SButton)
+					.Text(FText::FromString("Generate"))
+					.OnPressed(this, &FWFCAssetToolkit::TilsSettingGenerate)
+				]		
+			] 
+			+ SVerticalBox::Slot()
+			.AutoHeight()
+			.HAlign(HAlign_Left)
+			[
+				SAssignNew(TilesSettingVbx, SVerticalBox)
+			]
+		];
+}
+
+TSharedRef<SDockTab> FWFCAssetToolkit::SpawnTab_NeighborsSetting(const FSpawnTabArgs& Args)
+{
+	return SNew(SDockTab)
+		.Icon(FEditorStyle::GetBrush("LevelEditor.Tabs.Details"))
+		.Label(LOCTEXT("NeighborsTab_Title", "NeighborsSetting"))
+		[
+			SAssignNew(NeighborsSettingVbx, SVerticalBox)
+			+ SVerticalBox::Slot()
+			.AutoHeight()
+			.HAlign(HAlign_Left)
+			[
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot()
+				.AutoWidth()
+				.HAlign(HAlign_Left)
+				[
+					SNew(SButton)
+					.Text(FText::FromString("Generate"))
+					.OnPressed(this, &FWFCAssetToolkit::NeighborsSettingGenerate)
+				]
+				+ SHorizontalBox::Slot()
+				.AutoWidth()
+				.HAlign(HAlign_Left)
+				[
+					SNew(SButton)
+					.Text(FText::FromString("Save"))
+					.OnPressed(this, &FWFCAssetToolkit::NeighborsSettingSave)
+				]
+			]
+		];
+}
+
 TSharedRef<SDockTab> FWFCAssetToolkit::SpawnTab_Output(const FSpawnTabArgs& Args)
 {
 	OutputVbx = SNew(SVerticalBox);
@@ -216,8 +303,24 @@ TSharedRef<SDockTab> FWFCAssetToolkit::SpawnTab_Output(const FSpawnTabArgs& Args
 				.VAlign(VAlign_Center)
 				[
 					SNew(SButton)
-					.Text(FText::FromString("Save"))
-					.OnPressed(this, &FWFCAssetToolkit::OnSavePressed)
+					.Text(FText::FromString("Remove"))
+					//.OnPressed(this, &FWFCAssetToolkit::OnSavePressed)
+				]
+				+ SHorizontalBox::Slot()
+				.AutoWidth()
+				.VAlign(VAlign_Center)
+				[
+					SNew(SButton)
+					.Text(FText::FromString("Clrea"))
+					//.OnPressed(this, &FWFCAssetToolkit::OnSavePressed)
+				]
+				+ SHorizontalBox::Slot()
+				.AutoWidth()
+				.VAlign(VAlign_Center)
+				[
+					SNew(SButton)
+					.Text(FText::FromString("Generate"))
+					//.OnPressed(this, &FWFCAssetToolkit::OnSavePressed)
 				]
 			]
 			+SVerticalBox::Slot()
@@ -243,19 +346,16 @@ TSharedRef<SDockTab> FWFCAssetToolkit::SpawnTab_Output(const FSpawnTabArgs& Args
 	return OutputTab.ToSharedRef();
 }
 
-void FWFCAssetToolkit::RefreshTabs()
+void FWFCAssetToolkit::RefreshInputTab()
 {
-	//ReFillInputResHbxs();
-	ReFillOutputResHbxs();
-	/*if (TabManager)
-	{
-		TSharedPtr<SDockTab> OutputTab = TabManager->FindExistingLiveTab(FWFCAssetToolkitTabs::OutputTabID);
-		if (OutputTab.IsValid())
-		{
-			OutputTab->FlashTab();
-		}
-	}*/
+	ReFillInputResHbxs();
 }
+
+void FWFCAssetToolkit::RefreshOutputTab()
+{
+	ReFillOutputResHbxs();
+}
+
 
 void FWFCAssetToolkit::ReFillInputResHbxs()
 {
@@ -281,7 +381,7 @@ void FWFCAssetToolkit::ReFillInputResHbxs()
 						.HAlign(HAlign_Fill)
 						.Padding(0)
 						[
-							SNew(SMyTileItem)
+							SNew(SMyOutputTileItem)
 							.WFCAsset(WFCAsset)
 							.IsOutput(false)
 							.BrushIndex(BrushIndex)
@@ -319,7 +419,7 @@ void FWFCAssetToolkit::ReFillOutputResHbxs()
 						.HAlign(HAlign_Fill)
 						.Padding(0)
 						[
-							SNew(SMyTileItem)
+							SNew(SMyOutputTileItem)
 							.WFCAsset(WFCAsset)
 							.IsOutput(true)
 							.RowIndex(r)
@@ -338,13 +438,42 @@ void FWFCAssetToolkit::ReFillOutputResHbxs()
 	}
 }
 
-
-void FWFCAssetToolkit::OnSavePressed()
+void FWFCAssetToolkit::TilsSettingGenerate()
 {
-	WFCAsset->SaveCurrentOutPutAsTemplate();
+	TilesSettingVbx->ClearChildren();
+	if (WFCAsset)
+	{
+		WFCAsset->ReFillSymmetrys();
+		for (int32 i=0; i<WFCAsset->GetTilesNum(); i++)
+		{
+			TilesSettingVbx->AddSlot()
+				.AutoHeight()
+				.HAlign(HAlign_Left)
+				[
+					SNew(SMyTilesSettingItem)
+					.WFCAsset(WFCAsset)
+					.BrushIndex(i)
+				];
+		}
+	}
 }
 
-void SMyTileItem::Construct(const FArguments& InArgs)
+void FWFCAssetToolkit::TilsSettingSave()
+{
+
+}
+
+void FWFCAssetToolkit::NeighborsSettingGenerate()
+{
+
+}
+
+void FWFCAssetToolkit::NeighborsSettingSave()
+{
+
+}
+
+void SMyOutputTileItem::Construct(const FArguments& InArgs)
 {
 	WFCAsset = InArgs._WFCAsset.Get();
 	BrushIndex = InArgs._BrushIndex.Get();
@@ -372,10 +501,10 @@ void SMyTileItem::Construct(const FArguments& InArgs)
 				.HAlign(HAlign_Fill)
 				[
 					SAssignNew(Button, SButton)
-					.OnHovered(this, &SMyTileItem::OnHovered)
-					.OnUnhovered(this, &SMyTileItem::OnUnHovered)
-					.OnPressed(this, &SMyTileItem::OnPressed)
-					.OnReleased(this, &SMyTileItem::OnRealsed)
+					.OnHovered(this, &SMyOutputTileItem::OnHovered)
+					.OnUnhovered(this, &SMyOutputTileItem::OnUnHovered)
+					.OnPressed(this, &SMyOutputTileItem::OnPressed)
+					.OnReleased(this, &SMyOutputTileItem::OnRealsed)
 					.ButtonStyle(MyButtonStyle)
 					.ContentPadding(0)
 					.Content()
@@ -393,10 +522,10 @@ void SMyTileItem::Construct(const FArguments& InArgs)
 			[
 
 				SAssignNew(Button, SButton)
-				.OnHovered(this, &SMyTileItem::OnHovered)
-				.OnUnhovered(this, &SMyTileItem::OnUnHovered)
-				.OnPressed(this, &SMyTileItem::OnPressed)
-				.OnReleased(this, &SMyTileItem::OnRealsed)
+				.OnHovered(this, &SMyOutputTileItem::OnHovered)
+				.OnUnhovered(this, &SMyOutputTileItem::OnUnHovered)
+				.OnPressed(this, &SMyOutputTileItem::OnPressed)
+				.OnReleased(this, &SMyOutputTileItem::OnRealsed)
 				.ContentPadding(0)
 				.Content()
 				[
@@ -408,12 +537,12 @@ void SMyTileItem::Construct(const FArguments& InArgs)
 	
 }
 
-void SMyTileItem::OnHovered()
+void SMyOutputTileItem::OnHovered()
 {
 	Button->SetColorAndOpacity(FLinearColor(0.2, 0.2, 1, 1));
 }
 
-void SMyTileItem::OnUnHovered()
+void SMyOutputTileItem::OnUnHovered()
 {
 	if (!IsSelected)
 	{
@@ -425,7 +554,7 @@ void SMyTileItem::OnUnHovered()
 	}
 }
 
-void SMyTileItem::OnPressed()
+void SMyOutputTileItem::OnPressed()
 {
 	Button->SetColorAndOpacity(FLinearColor::Green);
 	if (IsOutput)
@@ -447,7 +576,7 @@ void SMyTileItem::OnPressed()
 	
 }
 
-void SMyTileItem::OnRealsed()
+void SMyOutputTileItem::OnRealsed()
 {
 	if (IsOutput)
 	{
@@ -455,10 +584,94 @@ void SMyTileItem::OnRealsed()
 	}
 }
 
-void SMyTileItem::OnNewBrushSelect()
+void SMyOutputTileItem::OnNewBrushSelect()
 {
 	Button->SetColorAndOpacity(FLinearColor::White);
 	IsSelected = false;
+}
+
+
+
+void SMyTilesSettingItem::Construct(const FArguments& InArgs)
+{
+	WFCAsset = InArgs._WFCAsset.Get();
+	BrushIndex = InArgs._BrushIndex.Get();
+	UEnum* SymmetrysEnum = StaticEnum<ESymmetry>();
+	for (int32 i=0; i<SymmetrysEnum->NumEnums()-1; i++)
+	{
+		FString EnumName = StaticEnum<ESymmetry>()->GetNameStringByValue(SymmetrysEnum->GetValueByIndex(i));
+		ComboBoxFilterOptions.Add(MakeShared<FString>(EnumName));
+	}
+	if (WFCAsset && WFCAsset->Symmetrys.IsValidIndex(BrushIndex))
+	{
+		SelectedComboBoxFilterOptions = static_cast<int32>(WFCAsset->Symmetrys[BrushIndex]);
+	}
+	else
+	{
+		SelectedComboBoxFilterOptions = 0;
+	}
+	ChildSlot
+		[
+			SNew(SHorizontalBox)
+			+SHorizontalBox::Slot()
+			.AutoWidth()
+			.Padding(2)
+			[
+				SNew(SImage)
+				.Image(WFCAsset->GetBrushInputByIndex(BrushIndex))
+			]
+			+ SHorizontalBox::Slot()
+			.VAlign(VAlign_Center)
+			.Padding(2)
+			[
+				SAssignNew(Combox, SComboBox<TSharedPtr<FString>>)
+				.OptionsSource(&ComboBoxFilterOptions)
+				.InitiallySelectedItem(ComboBoxFilterOptions[SelectedComboBoxFilterOptions])
+				.OnSelectionChanged(this, &SMyTilesSettingItem::ComboBoxWidgetSelectionChanged)
+				.OnGenerateWidget(this, &SMyTilesSettingItem::ComboBoxDetailFilterWidget)
+				[
+					SNew(STextBlock)
+					.Text(this, &SMyTilesSettingItem::GetSelectedComboBoxDetailFilterTextLabel)
+				]
+			]
+		];
+}
+
+void SMyTilesSettingItem::ComboBoxWidgetSelectionChanged(TSharedPtr<FString> NewSelection, ESelectInfo::Type SelectInfo)
+{
+	UEnum* SymmetrysEnum = StaticEnum<ESymmetry>();
+
+	for (int32 i = 0; i < ComboBoxFilterOptions.Num(); ++i)
+	{
+		if (ComboBoxFilterOptions[i] == NewSelection)
+		{
+			SelectedComboBoxFilterOptions = i;
+			if (WFCAsset->Symmetrys.IsValidIndex(BrushIndex))
+			{
+				WFCAsset->Symmetrys[BrushIndex] = ESymmetry(SymmetrysEnum->GetValueByIndex(i));
+			}
+			break;
+		}
+	}
+}
+
+TSharedRef<SWidget> SMyTilesSettingItem::ComboBoxDetailFilterWidget(TSharedPtr<FString> InItem)
+{
+	FString ItemString;
+	if (InItem.IsValid())
+	{
+		ItemString = *InItem;
+	}
+	return SNew(STextBlock).Text(FText::FromString(*ItemString));
+}
+
+FText SMyTilesSettingItem::GetSelectedComboBoxDetailFilterTextLabel() const
+{
+	int32 ComboBoxDetailFilterOptionsNum = ComboBoxFilterOptions.Num();
+	int32 SelectionIndex = SelectedComboBoxFilterOptions < 0 ? 0 
+		: (SelectedComboBoxFilterOptions < ComboBoxDetailFilterOptionsNum ? SelectedComboBoxFilterOptions
+			: ComboBoxDetailFilterOptionsNum - 1);
+	return FText::FromString(*ComboBoxFilterOptions[SelectionIndex]);
 }
 
 #undef LOCTEXT_NAMESPACE

@@ -26,6 +26,13 @@ void UWFCAsset::InitResBase(TArray<FAssetData>& InResBase)
 			InputRes.Add(Temp);
 		}
 	}
+	InitSetting(); 
+
+	Symmetrys.Empty();
+	for (int i = 0; i < BrushesInput.Num(); i++)
+	{
+		Symmetrys.Add(ESymmetry::I);
+	}
 }
 
 void UWFCAsset::InitSetting()
@@ -41,6 +48,7 @@ void UWFCAsset::InitSetting()
 	}
 	OutputInitBrush.ImageSize = FVector2D(BrushSize, BrushSize);
 	ReFillBrushes();
+	
 }
 
 FSlateBrush* UWFCAsset::GetBrushInputByIndex(int32 Index)
@@ -76,7 +84,7 @@ void UWFCAsset::SetBrushOutputByRowAndCloumns(int32 r, int32 c)
 	{
 		OutputIndexList[r][c] = BrushIndexSelected;
 	}
-	PropertyChange.Broadcast();
+	PropertyChangeOutput.Broadcast();
 }
 
 void UWFCAsset::SaveCurrentOutPutAsTemplate()
@@ -123,8 +131,13 @@ void UWFCAsset::SaveCurrentOutPutAsTemplate()
 	OutputIndexList = TemplateIndexList;
 	OutputRows = maxr - minr + 1;
 	OutputColumns = maxc - minc + 1;
-	PropertyChange.Broadcast();
+	PropertyChangeOutput.Broadcast();
 
+}
+
+int32 UWFCAsset::GetTilesNum()
+{
+	return BrushesInput.Num();
 }
 
 void UWFCAsset::ReFillBrushes()
@@ -149,8 +162,38 @@ void UWFCAsset::ReFillBrushes()
 	{
 		BrushIndexSelected = 0;
 	}
+	PropertyChangeInput.Broadcast();
 }
 
+
+void UWFCAsset::ReFillSymmetrys()
+{
+	if (Symmetrys.Num() == 0)
+	{
+		for (int i=0; i<BrushesInput.Num(); i++)
+		{
+			Symmetrys.Add(ESymmetry::I);
+		}
+	}
+	else
+	{
+		int sub = BrushesInput.Num() - Symmetrys.Num();
+		if (sub > 0)
+		{
+			for (int i = 0; i < sub; i++)
+			{
+				Symmetrys.RemoveAt(Symmetrys.Num()-1);
+			}
+		}
+		else
+		{
+			for (int i = 0; i < sub; i++)
+			{
+				Symmetrys.Add(ESymmetry::I);
+			}
+		}
+	}
+}
 
 void UWFCAsset::BrushIndexSelectedChange(int32 NewIndex)
 {
@@ -173,7 +216,6 @@ void UWFCAsset::BrushSizeChange(FString ChangeType)
 		BrushSize -= 1;
 	}
 	ReSizeBrushesOutput();
-	//PropertyChange.Broadcast();
 }
 
 
@@ -185,6 +227,7 @@ void UWFCAsset::ReSizeBrushesOutput()
 	{
 		Brush.ImageSize = FVector2D(BrushSize, BrushSize);
 	}
+	PropertyChangeOutput.Broadcast();
 }
 
 void UWFCAsset::ReFillOutputIndexList()
@@ -200,6 +243,7 @@ void UWFCAsset::ReFillOutputIndexList()
 		}
 		OutputIndexList.Add(TmpArray);
 	}
+	PropertyChangeOutput.Broadcast();
 }
 
 void UWFCAsset::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
@@ -221,7 +265,5 @@ void UWFCAsset::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEve
 		{
 			ReFillOutputIndexList();
 		}
-
-		PropertyChange.Broadcast();
 	}
 }
