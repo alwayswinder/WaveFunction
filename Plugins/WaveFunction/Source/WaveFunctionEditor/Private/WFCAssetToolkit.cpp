@@ -290,14 +290,14 @@ TSharedRef<SDockTab> FWFCAssetToolkit::SpawnTab_Output(const FSpawnTabArgs& Args
 			.HAlign(HAlign_Left)
 			[
 				SNew(SHorizontalBox)
-				+SHorizontalBox::Slot()
+				/* + SHorizontalBox::Slot()
 				.AutoWidth()
 				.VAlign(VAlign_Center)
 				[
 					SNew(SButton)
 					.OnPressed(this, &FWFCAssetToolkit::BrushStateChange)
 					.Text(this, &FWFCAssetToolkit::GetBrushStateText)
-				]
+				]*/
 				+ SHorizontalBox::Slot()
 				.AutoWidth()
 				.VAlign(VAlign_Center)
@@ -312,7 +312,7 @@ TSharedRef<SDockTab> FWFCAssetToolkit::SpawnTab_Output(const FSpawnTabArgs& Args
 				[
 					SNew(SButton)
 					.Text(FText::FromString("Generate"))
-					.OnPressed(this, &FWFCAssetToolkit::OnSavePressed)
+					.OnPressed(this, &FWFCAssetToolkit::OutputGenerate)
 				]
 			]
 			+SVerticalBox::Slot()
@@ -325,7 +325,7 @@ TSharedRef<SDockTab> FWFCAssetToolkit::SpawnTab_Output(const FSpawnTabArgs& Args
 				+SScrollBox::Slot()
 				[
 					SNew(SScrollBox)
-					.FlowDirectionPreference(EFlowDirectionPreference::RightToLeft)
+					//.FlowDirectionPreference(EFlowDirectionPreference::RightToLeft)
 					+SScrollBox::Slot()
 					[
 						OutputVbx.ToSharedRef()
@@ -361,6 +361,11 @@ void FWFCAssetToolkit::ClearOutput()
 	WFCAsset->ClearBrushOutput();
 }
 
+void FWFCAssetToolkit::OutputGenerate()
+{
+	WFCAsset->OnOutputGenerate();
+}
+
 FText FWFCAssetToolkit::GetBrushStateText() const 
 {
 	if(WFCAsset->GetIsPaint())
@@ -373,21 +378,22 @@ FText FWFCAssetToolkit::GetBrushStateText() const
 	}
 }
 
+
 void FWFCAssetToolkit::ReFillInputResHbxs()
 {
 	InputVbx->ClearChildren();
 	if (WFCAsset)
 	{
 		int32 RowEach = 8;
-		int32 Rows = (WFCAsset->InputRes.Num() - 1) / RowEach;
+		int32 Rows = (WFCAsset->InputTileInfoList.Num() - 1) / RowEach;
 
 		for (int32 r=0; r<=Rows; r++)
 		{
 			TSharedPtr<SHorizontalBox> TmpHbx = SNew(SHorizontalBox);
 
-			for (int32 c = 0; c < RowEach && r * Rows + c < WFCAsset->InputRes.Num(); c++)
+			for (int32 c = 0; c < RowEach && r * RowEach + c < WFCAsset->InputTileInfoList.Num(); c++)
 			{
-				int32 BrushIndex =  r * RowEach + c;
+				int32 TileIndex =  r * RowEach + c;
 				TmpHbx->AddSlot()
 					.AutoWidth()
 					.VAlign(VAlign_Center)
@@ -400,7 +406,7 @@ void FWFCAssetToolkit::ReFillInputResHbxs()
 							SNew(SMyOutputTileItem)
 							.WFCAsset(WFCAsset)
 							.IsOutput(false)
-							.BrushIndex(BrushIndex)
+							.InputTileIndex(TileIndex)
 						]
 					];
 			}
@@ -506,11 +512,48 @@ void FWFCAssetToolkit::NeighborsSettingReGenerate()
 void SMyOutputTileItem::Construct(const FArguments& InArgs)
 {
 	WFCAsset = InArgs._WFCAsset.Get();
-	BrushIndex = InArgs._BrushIndex.Get();
+	InputTileIndex = InArgs._InputTileIndex.Get();
 	IsOutput = InArgs._IsOutput.Get();
 	RowIndex = InArgs._RowIndex.Get();
 	ColumnIndex = InArgs._ColumnIndex.Get();
 	FSlateBrush* Brush;
+	ETileRot rot = ETileRot::None;
+	float degrees = 0;
+	float xAxis = 1;
+	float yAxis = 1;
+
+	if (IsOutput)
+	{
+		rot = WFCAsset->GetOutputTileRotByRowAndCloumns(RowIndex, ColumnIndex);
+	}
+	else
+	{
+		rot = WFCAsset->InputTileInfoList[InputTileIndex].Rot;
+	} 
+	
+	switch (rot)
+	{
+	case ETileRot::None:
+		break;
+	case ETileRot::nine:
+		degrees = 90;
+		break;
+	case ETileRot::OneEight:
+		degrees = 180;
+		break;
+	case ETileRot::TowSeven:
+		degrees = 270;
+		break;
+		/*case ETileRot::LR:
+			xAxis = -1;
+			break;
+		case ETileRot::UD:
+			yAxis = -1;
+			break;*/
+	default:
+		break;
+	}
+
 	if (IsOutput)
 	{
 		Brush = WFCAsset->GetBrushOutputByRowAndCloumns(RowIndex, ColumnIndex);
@@ -530,24 +573,39 @@ void SMyOutputTileItem::Construct(const FArguments& InArgs)
 				.VAlign(VAlign_Fill)
 				.HAlign(HAlign_Fill)
 				[
-					SAssignNew(Button, SButton)
-					.OnHovered(this, &SMyOutputTileItem::OnHovered)
-					.OnUnhovered(this, &SMyOutputTileItem::OnUnHovered)
-					.OnPressed(this, &SMyOutputTileItem::OnPressed)
-					.OnReleased(this, &SMyOutputTileItem::OnRealsed)
-					.ButtonStyle(MyButtonStyle)
-					.ContentPadding(0)
-					.Content()
+					SNew(SOverlay)
+					+SOverlay::Slot()
 					[
-						SNew(SImage)
-						.Image(Brush)
+						SAssignNew(Button, SButton)
+						.OnHovered(this, &SMyOutputTileItem::OnHovered)
+						.OnUnhovered(this, &SMyOutputTileItem::OnUnHovered)
+						.OnPressed(this, &SMyOutputTileItem::OnPressed)
+						.OnReleased(this, &SMyOutputTileItem::OnRealsed)
+						.ButtonStyle(MyButtonStyle)
+						.ContentPadding(0)
+						.Content()
+						[
+							SNew(SImage)
+							.Image(Brush)
+							.RenderTransformPivot((FVector2D(0.5f, 0.5f)))
+							.RenderTransform(TransformCast<FSlateRenderTransform>(Concatenate(FShear2D(0, 0),
+								FScale2D(xAxis, yAxis), FQuat2D(3.14 * 2 * degrees / 360))))
+						]
+					] 
+					+ SOverlay::Slot()
+					.HAlign(HAlign_Left)
+					.VAlign(VAlign_Top)
+					[
+						SNew(STextBlock)
+						.Text(this, &SMyOutputTileItem::GetNumofResult)
 					]
-				]
+				]	
 			];
 	}
 	else
 	{
-		Brush = WFCAsset->GetBrushInputByIndex(BrushIndex);
+		Brush = WFCAsset->GetBrushInputByTileIndex(InputTileIndex);
+		
 		ChildSlot
 			[
 
@@ -561,6 +619,9 @@ void SMyOutputTileItem::Construct(const FArguments& InArgs)
 				[
 					SNew(SImage)
 					.Image(Brush)
+					.RenderTransformPivot((FVector2D(0.5f, 0.5f)))
+					.RenderTransform(TransformCast<FSlateRenderTransform>(Concatenate(FShear2D(0, 0),
+						FScale2D(xAxis, yAxis), FQuat2D(3.14*2*degrees/360))))
 				]
 			];
 	}
@@ -593,9 +654,9 @@ void SMyOutputTileItem::OnPressed()
 	}
 	else
 	{
-		if (WFCAsset->GetBrushIndexSelected() != BrushIndex)
+		if (WFCAsset->GetInputTileIndexSelected() != InputTileIndex)
 		{
-			WFCAsset->BrushIndexSelectedChange(BrushIndex);
+			WFCAsset->InputileIndexSelectedChange(InputTileIndex);
 			if (WFCAsset->LastSelected)
 			{
 				WFCAsset->LastSelected->OnNewBrushSelect();
@@ -621,6 +682,12 @@ void SMyOutputTileItem::OnNewBrushSelect()
 }
 
 
+
+FText SMyOutputTileItem::GetNumofResult() const
+{
+	int32 retnum = WFCAsset->GetOutputResultNumByRC(RowIndex, ColumnIndex);
+	return FText::FromString(FString::FromInt(retnum));
+}
 
 void SMyTilesSettingItem::Construct(const FArguments& InArgs)
 {
