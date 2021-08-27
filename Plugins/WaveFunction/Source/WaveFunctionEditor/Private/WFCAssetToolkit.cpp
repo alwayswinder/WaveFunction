@@ -165,7 +165,7 @@ void FWFCAssetToolkit::Initialize(class UWFCAsset* InNewAsset, const EToolkitMod
 					->SetSizeCoefficient(0.2f)
 					->SetHideTabWell(true)
 					->AddTab(FWFCAssetToolkitTabs::TilesSettingTabID, ETabState::OpenedTab)
-					->AddTab(FWFCAssetToolkitTabs::NeighborsSettingTabID, ETabState::OpenedTab)
+					->AddTab(FWFCAssetToolkitTabs::NeighborsSettingTabID, ETabState::ClosedTab)
 					->SetForegroundTab(FWFCAssetToolkitTabs::TilesSettingTabID)
 				)
 				->Split
@@ -182,7 +182,8 @@ void FWFCAssetToolkit::Initialize(class UWFCAsset* InNewAsset, const EToolkitMod
 	InitAssetEditor(InMode, EditWithinLevelEditor, FWFCAssetToolkitTabs::AppIdentifier, WFCLayout, true, true, InNewAsset);
 	RegenerateMenusAndToolbars();
 	TilsSettingGenerate();
-}
+	NeighborsSettingGenerate(); 
+} 
 
 TSharedRef<SDockTab> FWFCAssetToolkit::SpawnTab_Input(const FSpawnTabArgs& Args)
 {
@@ -233,14 +234,14 @@ TSharedRef<SDockTab> FWFCAssetToolkit::SpawnTab_TilesSetting(const FSpawnTabArgs
 				[
 					SNew(SButton)
 					.Text(FText::FromString("Generate"))
-					.OnPressed(this, &FWFCAssetToolkit::TilsSettingGenerate)
+					.OnPressed(this, &FWFCAssetToolkit::TilsSettingReGenerate)
 				]		
 			] 
 			+ SVerticalBox::Slot()
-			.AutoHeight()
-			.HAlign(HAlign_Left)
+			.FillHeight(1.0)
+			.HAlign(HAlign_Fill)
 			[
-				SAssignNew(TilesSettingVbx, SVerticalBox)
+				SAssignNew(TilesSettingSSC, SScrollBox)
 			]
 		];
 }
@@ -251,7 +252,7 @@ TSharedRef<SDockTab> FWFCAssetToolkit::SpawnTab_NeighborsSetting(const FSpawnTab
 		.Icon(FEditorStyle::GetBrush("LevelEditor.Tabs.Details"))
 		.Label(LOCTEXT("NeighborsTab_Title", "NeighborsSetting"))
 		[
-			SAssignNew(NeighborsSettingVbx, SVerticalBox)
+			SNew(SVerticalBox)
 			+ SVerticalBox::Slot()
 			.AutoHeight()
 			.HAlign(HAlign_Left)
@@ -263,16 +264,14 @@ TSharedRef<SDockTab> FWFCAssetToolkit::SpawnTab_NeighborsSetting(const FSpawnTab
 				[
 					SNew(SButton)
 					.Text(FText::FromString("Generate"))
-					.OnPressed(this, &FWFCAssetToolkit::NeighborsSettingGenerate)
+					.OnPressed(this, &FWFCAssetToolkit::NeighborsSettingReGenerate)
 				]
-				+ SHorizontalBox::Slot()
-				.AutoWidth()
-				.HAlign(HAlign_Left)
-				[
-					SNew(SButton)
-					.Text(FText::FromString("Save"))
-					.OnPressed(this, &FWFCAssetToolkit::NeighborsSettingSave)
-				]
+			]
+			+ SVerticalBox::Slot()
+			.FillHeight(1.0)
+			.HAlign(HAlign_Fill)
+			[	
+				SAssignNew(NeighborsSettingSSC, SScrollBox)
 			]
 		];
 }
@@ -296,23 +295,16 @@ TSharedRef<SDockTab> FWFCAssetToolkit::SpawnTab_Output(const FSpawnTabArgs& Args
 				.VAlign(VAlign_Center)
 				[
 					SNew(SButton)
-					.Text(FText::FromString("Paint"))
+					.OnPressed(this, &FWFCAssetToolkit::BrushStateChange)
+					.Text(this, &FWFCAssetToolkit::GetBrushStateText)
 				]
 				+ SHorizontalBox::Slot()
 				.AutoWidth()
 				.VAlign(VAlign_Center)
 				[
 					SNew(SButton)
-					.Text(FText::FromString("Remove"))
-					//.OnPressed(this, &FWFCAssetToolkit::OnSavePressed)
-				]
-				+ SHorizontalBox::Slot()
-				.AutoWidth()
-				.VAlign(VAlign_Center)
-				[
-					SNew(SButton)
-					.Text(FText::FromString("Clrea"))
-					//.OnPressed(this, &FWFCAssetToolkit::OnSavePressed)
+					.Text(FText::FromString("Clear"))
+					.OnPressed(this, &FWFCAssetToolkit::ClearOutput)
 				]
 				+ SHorizontalBox::Slot()
 				.AutoWidth()
@@ -320,7 +312,7 @@ TSharedRef<SDockTab> FWFCAssetToolkit::SpawnTab_Output(const FSpawnTabArgs& Args
 				[
 					SNew(SButton)
 					.Text(FText::FromString("Generate"))
-					//.OnPressed(this, &FWFCAssetToolkit::OnSavePressed)
+					.OnPressed(this, &FWFCAssetToolkit::OnSavePressed)
 				]
 			]
 			+SVerticalBox::Slot()
@@ -349,6 +341,8 @@ TSharedRef<SDockTab> FWFCAssetToolkit::SpawnTab_Output(const FSpawnTabArgs& Args
 void FWFCAssetToolkit::RefreshInputTab()
 {
 	ReFillInputResHbxs();
+	TilsSettingGenerate();
+	NeighborsSettingGenerate();
 }
 
 void FWFCAssetToolkit::RefreshOutputTab()
@@ -356,6 +350,28 @@ void FWFCAssetToolkit::RefreshOutputTab()
 	ReFillOutputResHbxs();
 }
 
+
+void FWFCAssetToolkit::BrushStateChange()
+{
+	WFCAsset->ReSetIsPaint();
+}
+
+void FWFCAssetToolkit::ClearOutput()
+{
+	WFCAsset->ClearBrushOutput();
+}
+
+FText FWFCAssetToolkit::GetBrushStateText() const 
+{
+	if(WFCAsset->GetIsPaint())
+	{
+		return  FText::FromString("Paint");
+	}
+	else
+	{
+		return FText::FromString("Remove");
+	}
+}
 
 void FWFCAssetToolkit::ReFillInputResHbxs()
 {
@@ -440,37 +456,51 @@ void FWFCAssetToolkit::ReFillOutputResHbxs()
 
 void FWFCAssetToolkit::TilsSettingGenerate()
 {
-	TilesSettingVbx->ClearChildren();
+	TilesSettingSSC->ClearChildren();
 	if (WFCAsset)
 	{
-		WFCAsset->ReFillSymmetrys();
-		for (int32 i=0; i<WFCAsset->GetTilesNum(); i++)
+		for (int32 i=0; i<WFCAsset->GetSymmetrysNum(); i++)
 		{
-			TilesSettingVbx->AddSlot()
-				.AutoHeight()
-				.HAlign(HAlign_Left)
-				[
-					SNew(SMyTilesSettingItem)
-					.WFCAsset(WFCAsset)
-					.BrushIndex(i)
-				];
+			TilesSettingSSC->AddSlot()
+			.HAlign(HAlign_Left)
+			[
+				SNew(SMyTilesSettingItem)
+				.WFCAsset(WFCAsset)
+				.BrushIndex(i)
+			];
 		}
 	}
 }
 
-void FWFCAssetToolkit::TilsSettingSave()
-{
-
-}
-
 void FWFCAssetToolkit::NeighborsSettingGenerate()
 {
-
+	NeighborsSettingSSC->ClearChildren();
+	if (WFCAsset)
+	{
+		for (auto& Elem : WFCAsset->Neighbors)
+		{
+			NeighborsSettingSSC->AddSlot()
+			.HAlign(HAlign_Left)
+			[
+				SNew(SMyNeighborsSettingItem)
+				.WFCAsset(WFCAsset)
+				.Key(Elem.Key)
+				.ParentSlate(NeighborsSettingSSC)
+			];
+		}
+	}
 }
 
-void FWFCAssetToolkit::NeighborsSettingSave()
+void FWFCAssetToolkit::TilsSettingReGenerate()
 {
+	WFCAsset->ReFillSymmetrys();
+	TilsSettingGenerate();
+}
 
+void FWFCAssetToolkit::NeighborsSettingReGenerate()
+{
+	WFCAsset->ReFillNeighbors();
+	NeighborsSettingGenerate();
 }
 
 void SMyOutputTileItem::Construct(const FArguments& InArgs)
@@ -672,6 +702,50 @@ FText SMyTilesSettingItem::GetSelectedComboBoxDetailFilterTextLabel() const
 		: (SelectedComboBoxFilterOptions < ComboBoxDetailFilterOptionsNum ? SelectedComboBoxFilterOptions
 			: ComboBoxDetailFilterOptionsNum - 1);
 	return FText::FromString(*ComboBoxFilterOptions[SelectionIndex]);
+}
+
+
+void SMyNeighborsSettingItem::Construct(const FArguments& InArgs)
+{
+	WFCAsset = InArgs._WFCAsset.Get();
+	Key = InArgs._Key.Get();
+	ParentSlate = InArgs._ParentSlate.Get();
+
+	int32 LeftIndex = WFCAsset->Neighbors.Find(Key)->Left.index;
+	int32 RightIndex = WFCAsset->Neighbors.Find(Key)->Right.index;
+
+	ChildSlot
+		[
+			SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			.Padding(2)
+			[
+				SNew(SImage)
+				.Image(WFCAsset->GetBrushInputByIndex(LeftIndex))
+			]
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			.Padding(2)
+			[
+				SNew(SImage)
+				.Image(WFCAsset->GetBrushInputByIndex(RightIndex))
+			]
+			+ SHorizontalBox::Slot()
+			.VAlign(VAlign_Center)
+			.Padding(2)
+			[
+				SNew(SButton)
+				.Text(FText::FromString("X"))
+				.OnPressed(this, &SMyNeighborsSettingItem::Removeneighbor)
+			]
+		];
+}
+
+void SMyNeighborsSettingItem::Removeneighbor()
+{
+	WFCAsset->RemoveNeighborByKey(Key);
+	ParentSlate->RemoveSlot(this->AsShared());
 }
 
 #undef LOCTEXT_NAMESPACE

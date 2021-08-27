@@ -5,6 +5,8 @@
 #include "Toolkits/AssetEditorToolkit.h"
 
 class UWFCAsset;
+class SScrollBox;
+
 class SMyOutputTileItem : public SCompoundWidget
 {
 public:
@@ -55,6 +57,26 @@ private:
 	int32 BrushIndex;
 };
 
+class SMyNeighborsSettingItem : public SCompoundWidget
+{
+public:
+	SLATE_BEGIN_ARGS(SMyNeighborsSettingItem) {}
+	SLATE_ATTRIBUTE(UWFCAsset*, WFCAsset)
+	SLATE_ATTRIBUTE(TSharedPtr<SScrollBox>, ParentSlate)
+	SLATE_ATTRIBUTE(int32, Key)
+	SLATE_END_ARGS()
+
+	void Construct(const FArguments& InArgs);
+protected:
+	void Removeneighbor();
+
+private:
+	TSharedPtr<SScrollBox> ParentSlate;
+	UWFCAsset* WFCAsset;
+	int32 Key;
+
+};
+
 namespace FWFCAssetToolkitTabs
 {
 	static const FName AppIdentifier("FWCAssetEditorApp");
@@ -91,20 +113,24 @@ protected:
 	TSharedRef<SDockTab> SpawnTab_Output(const FSpawnTabArgs& Args);
 	void RefreshInputTab();
 	void RefreshOutputTab();
+	void BrushStateChange();
+	void ClearOutput();
+	FText GetBrushStateText()const;
 
 	TSharedPtr<SVerticalBox> OutputVbx;
 	TSharedPtr<SVerticalBox> InputVbx;
-	TSharedPtr<SVerticalBox> TilesSettingVbx;
-	TSharedPtr<SVerticalBox> NeighborsSettingVbx;
-
+	TSharedPtr<SScrollBox> TilesSettingSSC;
+	TSharedPtr<SScrollBox> NeighborsSettingSSC;
+	TSharedPtr<SButton> BtBrushChange;
 	/**/
 	void ReFillInputResHbxs();
 	void ReFillOutputResHbxs();
 
 	void TilsSettingGenerate();
-	void TilsSettingSave();
 	void NeighborsSettingGenerate();
-	void NeighborsSettingSave();
+
+	void TilsSettingReGenerate();
+	void NeighborsSettingReGenerate();
 
 private:
 	/**/

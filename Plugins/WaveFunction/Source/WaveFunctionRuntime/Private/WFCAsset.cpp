@@ -82,9 +82,22 @@ void UWFCAsset::SetBrushOutputByRowAndCloumns(int32 r, int32 c)
 {
 	if (OutputIndexList.IsValidIndex(r) && OutputIndexList[r].IsValidIndex(c))
 	{
-		OutputIndexList[r][c] = BrushIndexSelected;
+		if (IsPaint)
+		{
+			OutputIndexList[r][c] = BrushIndexSelected;
+		}
+		else
+		{
+			OutputIndexList[r][c] = -1;
+		}
 	}
+
 	PropertyChangeOutput.Broadcast();
+}
+
+void UWFCAsset::ClearBrushOutput()
+{
+	ReFillOutputIndexList();
 }
 
 void UWFCAsset::SaveCurrentOutPutAsTemplate()
@@ -140,6 +153,22 @@ int32 UWFCAsset::GetTilesNum()
 	return BrushesInput.Num();
 }
 
+int32 UWFCAsset::GetSymmetrysNum()
+{
+	return Symmetrys.Num();
+}
+
+
+void UWFCAsset::ReSetIsPaint()
+{
+	IsPaint = !IsPaint;
+}
+
+bool UWFCAsset::GetIsPaint()
+{
+	return IsPaint;
+}
+
 void UWFCAsset::ReFillBrushes()
 {
 	BrushesInput.Empty();
@@ -147,16 +176,19 @@ void UWFCAsset::ReFillBrushes()
 
 	for (auto Texture : InputRes)
 	{
-		FSlateBrush TempBrushInput;
-		TempBrushInput.SetResourceObject(Texture);
-		//Brush.ImageSize = FVector2D(Texture->GetSizeX(), Texture->GetSizeY());
-		TempBrushInput.ImageSize = FVector2D(64, 64);
-		BrushesInput.Add(TempBrushInput);
+		if (Texture)
+		{
+			FSlateBrush TempBrushInput;
+			TempBrushInput.SetResourceObject(Texture);
+			//Brush.ImageSize = FVector2D(Texture->GetSizeX(), Texture->GetSizeY());
+			TempBrushInput.ImageSize = FVector2D(64, 64);
+			BrushesInput.Add(TempBrushInput);
 
-		FSlateBrush TempBrushOutput;
-		TempBrushOutput.SetResourceObject(Texture);
-		TempBrushOutput.ImageSize = FVector2D(BrushSize, BrushSize);
-		BrushesOutput.Add(TempBrushOutput);
+			FSlateBrush TempBrushOutput;
+			TempBrushOutput.SetResourceObject(Texture);
+			TempBrushOutput.ImageSize = FVector2D(BrushSize, BrushSize);
+			BrushesOutput.Add(TempBrushOutput);
+		}
 	}
 	if (BrushesInput.Num() > 0 && BrushIndexSelected == -1)
 	{
@@ -193,6 +225,24 @@ void UWFCAsset::ReFillSymmetrys()
 			}
 		}
 	}
+}
+
+void UWFCAsset::ReFillNeighbors()
+{
+	int32 key = 0;
+	for (int i=0; i<GetTilesNum(); i++)
+	{
+		for (int j=0; j<GetTilesNum(); j++)
+		{
+			Neighbors.Add(key, FNeighborInfo(i, j));
+			key++;
+		}
+	}
+}
+
+void UWFCAsset::RemoveNeighborByKey(int32 Key)
+{
+	Neighbors.Remove(Key);
 }
 
 void UWFCAsset::BrushIndexSelectedChange(int32 NewIndex)
