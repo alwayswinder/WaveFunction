@@ -36,12 +36,22 @@ void UWFCAsset::InitResBase(TArray<FAssetData>& InResBase)
 
 void UWFCAsset::InitSetting()
 {
+	int k = 0;
+	OutputTileInfoList.Empty();
 	for (int r = 0; r < OutputRows; r++)
 	{
 		TArray<FTilesInfo> TmpArray;
 		for (int c = 0; c < OutputColumns; c++)
 		{
-			TmpArray.Add(FTilesInfo());
+			if (ResultListSave.IsValidIndex(k))
+			{
+				TmpArray.Add(ResultListSave[k]);
+			}
+			else
+			{
+				TmpArray.Add(FTilesInfo());
+			}
+			k++;
 		}
 		OutputTileInfoList.Add(TmpArray);
 	}
@@ -112,97 +122,213 @@ void UWFCAsset::SetBrushOutputByRowAndCloumns(int32 r, int32 c)
 void UWFCAsset::ClearBrushOutput()
 {
 	ReFillOutputIndexList();
+	SumFrequency = 0;
+
+	OutputTimesApear.Empty();
+	OutputFresuqnceShould.Empty();
+	for (int i=0; i<InputTileInfoList.Num(); i++)
+	{
+		OutputTimesApear.Add(0);
+		FTilesInfo tmp = InputTileInfoList[i];
+		switch (Symmetrys[tmp.index])
+		{
+		case ESymmetry::I:
+			OutputFresuqnceShould.Add(Frequencys[tmp.index] / 2);
+			break;
+		case ESymmetry::L:
+			OutputFresuqnceShould.Add(Frequencys[tmp.index] / 4);
+			break;
+		case ESymmetry::T:
+			OutputFresuqnceShould.Add(Frequencys[tmp.index] / 4);
+			break;
+		case ESymmetry::X:
+			OutputFresuqnceShould.Add(Frequencys[tmp.index]);
+			break;
+		default:
+			break;
+		}
+		SumFrequency += OutputFresuqnceShould[i];
+	}
+}
+
+void UWFCAsset::SaveTileInfoOutput()
+{
+	ResultListSave.Empty();
+	for (int r=0; r<OutputTileInfoList.Num();r++)
+	{
+		for (int c = 0; c < OutputTileInfoList[r].Num(); c++)
+		{
+			ResultListSave.Add(OutputTileInfoList[r][c]);
+		}
+	}
 }
 
 void UWFCAsset::OnOutputAnalysis(int r, int c)
 {
 	OutputTilesMaybe[r][c].Empty();
-	FTilesInfo LastTile = InputTileInfoList[InputTileIndexSelected];
-	//up
+	FTilesInfo LastTile = OutputTileInfoList[r][c];
+	//up down left right
 	if (OutputTilesMaybe.IsValidIndex(r-1) && OutputTilesMaybe[r-1].IsValidIndex(c)
 		&& OutputTilesMaybe[r-1][c].Num() > 0)
 	{ 
-		LastTile.Rot = TileRotAdd(LastTile.Rot);
-		TArray<int32> UpNeighbors;
-		for (auto neighbor : Neighbors)
+		TArray<FTilesInfo> UpNeighbors;
+		for (auto neighbor : NeighborsUD)
 		{
-			if (neighbor.Value.Left.index == LastTile.index
-				&& neighbor.Value.Left.Rot == LastTile.Rot)
+			if (neighbor.Right.index == LastTile.index && neighbor.Right.Rot == LastTile.Rot)
 			{
-				FTilesInfo Tmp = neighbor.Value.Right;
-				Tmp.Rot = TileRotAdd(Tmp.Rot); 
+				FTilesInfo Tmp = neighbor.Left;
 				bool IsFind = false;
 				for (int i = 0; i < OutputTilesMaybe[r - 1][c].Num(); i++)
 				{
-					if (Tmp.index == InputTileInfoList[OutputTilesMaybe[r - 1][c][i]].index
-						&& Tmp.Rot == InputTileInfoList[OutputTilesMaybe[r - 1][c][i]].Rot)
+					if (Tmp.index == OutputTilesMaybe[r - 1][c][i].index
+						&& Tmp.Rot == OutputTilesMaybe[r - 1][c][i].Rot)
 					{
 						IsFind = true;
 					}
 				}
 				if (IsFind)
 				{
-					UpNeighbors.Add(Tmp.index);
+					UpNeighbors.Add(Tmp);
 				}
 			}
 		}
 		OutputTilesMaybe[r - 1][c] = UpNeighbors;
 	}
+
+	if (OutputTilesMaybe.IsValidIndex(r + 1) && OutputTilesMaybe[r + 1].IsValidIndex(c)
+		&& OutputTilesMaybe[r + 1][c].Num() > 0)
+	{
+		TArray<FTilesInfo> DownNeighbors;
+		for (auto neighbor : NeighborsUD)
+		{
+			if (neighbor.Left.index == LastTile.index && neighbor.Left.Rot == LastTile.Rot)
+			{
+				FTilesInfo Tmp = neighbor.Right;
+				bool IsFind = false;
+				for (int i = 0; i < OutputTilesMaybe[r + 1][c].Num(); i++)
+				{
+					if (Tmp.index == OutputTilesMaybe[r + 1][c][i].index
+						&& Tmp.Rot == OutputTilesMaybe[r + 1][c][i].Rot)
+					{
+						IsFind = true;
+					}
+				}
+				if (IsFind)
+				{
+					DownNeighbors.Add(Tmp);
+				}
+			}
+		}
+		OutputTilesMaybe[r + 1][c] = DownNeighbors;
+	}
+
+	if (OutputTilesMaybe.IsValidIndex(r) && OutputTilesMaybe[r].IsValidIndex(c - 1)
+		&& OutputTilesMaybe[r][c - 1].Num() > 0)
+	{
+		TArray<FTilesInfo> LeftNeighbors;
+		for (auto neighbor : NeighborsLR)
+		{
+			if (neighbor.Right.index == LastTile.index && neighbor.Right.Rot == LastTile.Rot)
+			{
+				FTilesInfo Tmp = neighbor.Left;
+				bool IsFind = false;
+				for (int i = 0; i < OutputTilesMaybe[r][c - 1].Num(); i++)
+				{
+					if (Tmp.index == OutputTilesMaybe[r][c - 1][i].index
+						&& Tmp.Rot == OutputTilesMaybe[r][c - 1][i].Rot)
+					{
+						IsFind = true;
+					}
+				}
+				if (IsFind)
+				{
+					LeftNeighbors.Add(Tmp);
+				}
+			}
+		}
+		OutputTilesMaybe[r][c - 1] = LeftNeighbors;
+	}
+
+	if (OutputTilesMaybe.IsValidIndex(r) && OutputTilesMaybe[r].IsValidIndex(c + 1)
+		&& OutputTilesMaybe[r][c + 1].Num() > 0)
+	{
+		TArray<FTilesInfo> RightNeighbors;
+		for (auto neighbor : NeighborsLR)
+		{
+			if (neighbor.Left.index == LastTile.index && neighbor.Left.Rot == LastTile.Rot)
+			{
+				FTilesInfo Tmp = neighbor.Right;
+				bool IsFind = false;
+				for (int i = 0; i < OutputTilesMaybe[r][c + 1].Num(); i++)
+				{
+					if (Tmp.index == OutputTilesMaybe[r][c + 1][i].index
+						&& Tmp.Rot == OutputTilesMaybe[r][c + 1][i].Rot)
+					{
+						IsFind = true;
+					}
+				}
+				if (IsFind)
+				{
+					RightNeighbors.Add(Tmp);
+				}
+			}
+		}
+		OutputTilesMaybe[r][c + 1] = RightNeighbors;
+	}
+	int32 MaxMaybe = InputTileInfoList.Num();
+
+	for (int R=0; R<OutputTilesMaybe.Num(); R++)
+	{
+		for (int32 C = 0; C < OutputTilesMaybe[R].Num(); C++)
+		{
+			if (OutputTilesMaybe[R][C].Num() > 0 && OutputTilesMaybe[R][C].Num() < MaxMaybe)
+			{
+				MaxMaybe = OutputTilesMaybe[R][C].Num();
+				RowNext = R;
+				ColumnNext = C;
+			}
+		}
+	}
 }
 
 void UWFCAsset::OnOutputGenerate()
 {
+	float MinFrequency = 1.f;
+	int32 indexSelect = 0;
+	int index = 0;
 
-	PropertyChangeOutput.Broadcast();
-}
-/*
-void UWFCAsset::SaveCurrentOutPutAsTemplate()
-{
-	TemplateIndexList.Empty();
-	int32 minr = OutputRows;
-	int32 maxr = 0;
-	int32 minc = OutputColumns;
-	int32 maxc = 0;
-	for (int r = 0; r < OutputRows; r++)
+	for (int i = 0; i < OutputTilesMaybe[RowNext][ColumnNext].Num(); i++)
 	{
-		for (int c = 0; c < OutputColumns; c++)
+		for (index = 0; index < InputTileInfoList.Num(); index++)
 		{
-			if (OutputIndexList[r][c] != -1)
+			if (OutputTilesMaybe[RowNext][ColumnNext][i].index == InputTileInfoList[index].index
+				&& OutputTilesMaybe[RowNext][ColumnNext][i].Rot == InputTileInfoList[index].Rot)
 			{
-				if (r < minr)
-				{
-					minr = r;
-				}
-				if (r > maxr)
-				{
-					maxr = r;
-				}
-				if (c < minc)
-				{
-					minc = c;
-				}
-				if (c > maxc)
-				{
-					maxc = c;
-				}
+				break;
 			}
 		}
-	}
-	for (int r = minr; r <= maxr; r++)
-	{
-		TArray<int32> TempArray;
-		for (int c = minc; c <= maxc; c++)
+		float FrequenceNow = OutputTimesApear[index] / (float)(OutputRows * OutputColumns);
+		float FrequenceShould = OutputFresuqnceShould[index] / SumFrequency;
+		float FreTmp = FrequenceNow / FrequenceShould;
+		if (FreTmp < MinFrequency)
 		{
-			TempArray.Add(OutputIndexList[r][c]);
+			MinFrequency = FrequenceNow / FrequenceShould;
+			indexSelect = i;
 		}
-		TemplateIndexList.Add(TempArray);
 	}
-	OutputIndexList = TemplateIndexList;
-	OutputRows = maxr - minr + 1;
-	OutputColumns = maxc - minc + 1;
-	PropertyChangeOutput.Broadcast();
 
-}*/
+	if (OutputTilesMaybe.IsValidIndex(RowNext) && OutputTilesMaybe[RowNext].IsValidIndex(ColumnNext)
+		&& OutputTilesMaybe[RowNext][ColumnNext].IsValidIndex(indexSelect))
+	{
+		OutputTileInfoList[RowNext][ColumnNext] = OutputTilesMaybe[RowNext][ColumnNext][indexSelect];
+
+		OutputTimesApear[index]++;
+
+		OnOutputAnalysis(RowNext, ColumnNext);
+
+		PropertyChangeOutput.Broadcast();
+	}
+}
 
 int32 UWFCAsset::GetTilesNum()
 {
@@ -222,28 +348,6 @@ int32 UWFCAsset::GetOutputResultNumByRC(int32 r, int32 c)
 		return OutputTilesMaybe[r][c].Num();
 	}
 	return 0;
-}
-
-ETileRot UWFCAsset::TileRotAdd(ETileRot inRot)
-{
-	ETileRot retRot;
-	if (inRot == ETileRot::None)
-	{
-		retRot = ETileRot::nine;
-	}
-	if (inRot == ETileRot::nine)
-	{
-		retRot = ETileRot::OneEight;
-	}
-	if (inRot == ETileRot::OneEight)
-	{
-		retRot = ETileRot::TowSeven;
-	}
-	if (inRot == ETileRot::TowSeven)
-	{
-		retRot = ETileRot::None;
-	}
-	return retRot;
 }
 
 void UWFCAsset::ReSetIsPaint()
@@ -278,8 +382,9 @@ void UWFCAsset::ReFillBrushes()
 		}
 	}
 	ReFillInputBrushesWithRot();
-	ReFillOutputIndexList();
+	//ReFillOutputIndexList();
 	PropertyChangeInput.Broadcast();
+	PropertyChangeOutput.Broadcast();
 }
 
 
@@ -326,7 +431,7 @@ void UWFCAsset::ReFillInputBrushesWithRot()
 	}
 }
 
-void UWFCAsset::ReFillSymmetrys()
+void UWFCAsset::ReFillSymmetrysAndFrequencys()
 {
 	if (Symmetrys.Num() == 0)
 	{
@@ -353,6 +458,11 @@ void UWFCAsset::ReFillSymmetrys()
 			}
 		}
 	}
+	Frequencys.Empty();
+	for (int i=0; i<BrushesInput.Num(); i++)
+	{
+		Frequencys.Add(1.0f);
+	}
 
 	PropertyChangeOutput.Broadcast();
 }
@@ -360,11 +470,14 @@ void UWFCAsset::ReFillSymmetrys()
 void UWFCAsset::ReFillNeighbors()
 {
 	int32 key = 0;
-	for (int i=0; i<GetTilesNum(); i++)
+	for (int i=0; i< InputTileInfoList.Num(); i++)
 	{
-		for (int j=0; j<GetTilesNum(); j++)
+		for (int j=i; j< InputTileInfoList.Num(); j++)
 		{
-			Neighbors.Add(key, FNeighborInfo(i, j));
+			FNeighborInfo Neighbor;
+			Neighbor.Left = InputTileInfoList[i];
+			Neighbor.Right = InputTileInfoList[j];
+			Neighbors.Add(key, Neighbor);
 			key++;
 		}
 	}
@@ -373,6 +486,28 @@ void UWFCAsset::ReFillNeighbors()
 void UWFCAsset::RemoveNeighborByKey(int32 Key)
 {
 	Neighbors.Remove(Key);
+}
+
+void UWFCAsset::ReFillNeighborLRAndUD()
+{
+	NeighborsLR.Empty();
+	NeighborsUD.Empty();
+
+	for (auto Neighbor : Neighbors)
+	{
+		NeighborsLR.Add(Neighbor.Value);
+		FNeighborInfo Tmp;
+		Tmp.Left = TileRot180(Neighbor.Value.Right);
+		Tmp.Right = TileRot180(Neighbor.Value.Left);
+		NeighborsLR.Add(Tmp);
+	}
+	for (int32 i = 0; i < NeighborsLR.Num(); i++)
+	{
+		FNeighborInfo Tmp;
+		Tmp.Left = TileRot90(NeighborsLR[i].Left);
+		Tmp.Right = TileRot90(NeighborsLR[i].Right);
+		NeighborsUD.Add(Tmp);
+	}
 }
 
 void UWFCAsset::InputileIndexSelectedChange(int32 NewIndex)
@@ -425,24 +560,145 @@ void UWFCAsset::ReFillOutputIndexList()
 	OutputTileInfoList.Empty();
 	OutputTilesMaybe.Empty();
 
+	RowNext = -1;
+	ColumnNext = -1;
+
 	for (int r = 0; r < OutputRows; r++)
 	{
 		TArray<FTilesInfo> TmpArray;
-		TArray<TArray<int32>> Tmp32Array;
+		TArray<TArray<FTilesInfo>> TmpMaybeArray;
 		for (int c = 0; c < OutputColumns; c++)
 		{
 			TmpArray.Add(FTilesInfo());
-			TArray<int32> Tmp;
+			TArray<FTilesInfo> Tmp;
 			for (int i=0; i<InputTileInfoList.Num(); i++)
 			{
-				Tmp.Add(i);
+				Tmp.Add(InputTileInfoList[i]);
 			}
-			Tmp32Array.Add(Tmp);
+			TmpMaybeArray.Add(Tmp);
 		}
 		OutputTileInfoList.Add(TmpArray);
-		OutputTilesMaybe.Add(Tmp32Array);
+		OutputTilesMaybe.Add(TmpMaybeArray);
 	}
+
 	PropertyChangeOutput.Broadcast();
+}
+
+FTilesInfo UWFCAsset::TileRot180(FTilesInfo InTile)
+{
+	FTilesInfo Tmp = InTile;
+	switch (Symmetrys[InTile.index])
+	{
+	case ESymmetry::I:
+		break;
+	case ESymmetry::L:
+		switch (InTile.Rot)
+		{
+		case ETileRot::None:
+			Tmp.Rot = ETileRot::OneEight;
+			break;
+		case ETileRot::nine:
+			Tmp.Rot = ETileRot::TowSeven;
+			break;
+		case ETileRot::OneEight:
+			Tmp.Rot = ETileRot::None;
+			break;
+		case ETileRot::TowSeven:
+			Tmp.Rot = ETileRot::nine;
+			break;
+		default:
+			break;
+		}
+		break;
+	case ESymmetry::T:
+		switch (InTile.Rot)
+		{
+		case ETileRot::None:
+			Tmp.Rot = ETileRot::OneEight;
+			break;
+		case ETileRot::nine:
+			Tmp.Rot = ETileRot::TowSeven;
+			break;
+		case ETileRot::OneEight:
+			Tmp.Rot = ETileRot::None;
+			break;
+		case ETileRot::TowSeven:
+			Tmp.Rot = ETileRot::nine;
+			break;
+		default:
+			break;
+		}
+		break;
+	case ESymmetry::X:
+		break;
+	default:
+		break;
+	}
+	return Tmp;
+}
+
+FTilesInfo UWFCAsset::TileRot90(FTilesInfo InTile)
+{
+	FTilesInfo Tmp = InTile;
+	switch (Symmetrys[InTile.index])
+	{
+	case ESymmetry::I:
+		switch (InTile.Rot)
+		{
+		case ETileRot::None:
+			Tmp.Rot = ETileRot::nine;
+			break;
+		case ETileRot::nine:
+			Tmp.Rot = ETileRot::None;
+			break;
+		default:
+			break;
+		}
+		break;
+	case ESymmetry::L:
+		switch (InTile.Rot)
+		{
+		case ETileRot::None:
+			Tmp.Rot = ETileRot::nine;
+			break;
+		case ETileRot::nine:
+			Tmp.Rot = ETileRot::OneEight;
+			break;
+		case ETileRot::OneEight:
+			Tmp.Rot = ETileRot::TowSeven;
+			break;
+		case ETileRot::TowSeven:
+			Tmp.Rot = ETileRot::None;
+			break;
+		default:
+			break;
+		}
+		break;
+	case ESymmetry::T:
+		switch (InTile.Rot)
+		{
+		case ETileRot::None:
+			Tmp.Rot = ETileRot::nine;
+			break;
+		case ETileRot::nine:
+			Tmp.Rot = ETileRot::OneEight;
+			break;
+		case ETileRot::OneEight:
+			Tmp.Rot = ETileRot::TowSeven;
+			break;
+		case ETileRot::TowSeven:
+			Tmp.Rot = ETileRot::None;
+			break;
+		default:
+			break;
+		}
+		break;
+	case ESymmetry::X:
+		break;
+	default:
+		break;
+	}
+	return Tmp;
 }
 
 void UWFCAsset::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)

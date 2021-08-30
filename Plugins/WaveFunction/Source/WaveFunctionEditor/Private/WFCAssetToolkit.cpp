@@ -7,6 +7,7 @@
 #include "Brushes\SlateBoxBrush.h"
 #include "Widgets\Layout\SScrollBox.h"
 #include "WFCInputProcessor.h"
+#include "Widgets\Text\SInlineEditableTextBlock.h"
 
 #define LOCTEXT_NAMESPACE "WFCEditor"
 
@@ -116,7 +117,7 @@ bool FWFCAssetToolkit::OnRequestClose()
 {
 	WFCAsset->PropertyChangeInput.Remove(PropertyChangeHandleInput);
 	WFCAsset->PropertyChangeOutput.Remove(PropertyChangeHandleOutput);
-
+	WFCAsset->SaveTileInfoOutput();
 	FWFCInputProcessor::Get().RemoveTab(OutputTab);
 	return  true;
 }
@@ -265,6 +266,14 @@ TSharedRef<SDockTab> FWFCAssetToolkit::SpawnTab_NeighborsSetting(const FSpawnTab
 					SNew(SButton)
 					.Text(FText::FromString("Generate"))
 					.OnPressed(this, &FWFCAssetToolkit::NeighborsSettingReGenerate)
+				]
+				+ SHorizontalBox::Slot()
+				.AutoWidth()
+				.HAlign(HAlign_Left)
+				[
+					SNew(SButton)
+					.Text(FText::FromString("ReFill"))
+					.OnPressed(this, &FWFCAssetToolkit::NeighborsSettingReFill)
 				]
 			]
 			+ SVerticalBox::Slot()
@@ -499,7 +508,7 @@ void FWFCAssetToolkit::NeighborsSettingGenerate()
 
 void FWFCAssetToolkit::TilsSettingReGenerate()
 {
-	WFCAsset->ReFillSymmetrys();
+	WFCAsset->ReFillSymmetrysAndFrequencys();
 	TilsSettingGenerate();
 }
 
@@ -507,6 +516,11 @@ void FWFCAssetToolkit::NeighborsSettingReGenerate()
 {
 	WFCAsset->ReFillNeighbors();
 	NeighborsSettingGenerate();
+}
+
+void FWFCAssetToolkit::NeighborsSettingReFill()
+{
+	WFCAsset->ReFillNeighborLRAndUD();
 }
 
 void SMyOutputTileItem::Construct(const FArguments& InArgs)
@@ -731,6 +745,15 @@ void SMyTilesSettingItem::Construct(const FArguments& InArgs)
 					.Text(this, &SMyTilesSettingItem::GetSelectedComboBoxDetailFilterTextLabel)
 				]
 			]
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			.Padding(2)
+			[
+				SNew(SInlineEditableTextBlock)
+				.OnTextCommitted(this, &SMyTilesSettingItem::OnTextCommit)
+				.Text(this, &SMyTilesSettingItem::GetFrequencyText)
+			]
+			
 		];
 }
 
@@ -772,6 +795,25 @@ FText SMyTilesSettingItem::GetSelectedComboBoxDetailFilterTextLabel() const
 }
 
 
+void SMyTilesSettingItem::OnTextCommit(const FText& InText, ETextCommit::Type InCommitInfo)
+{
+	float Frequeny = FCString::Atof(*InText.ToString());
+	if (WFCAsset->Frequencys.IsValidIndex(BrushIndex))
+	{
+		WFCAsset->Frequencys[BrushIndex] = Frequeny;
+	}
+}
+
+FText SMyTilesSettingItem::GetFrequencyText() const
+{
+	float Frequency = -1.0f;
+	if (WFCAsset->Frequencys.IsValidIndex(BrushIndex))
+	{
+		Frequency = WFCAsset->Frequencys[BrushIndex];
+	}
+	return FText::FromString(FString::SanitizeFloat(Frequency));
+}
+
 void SMyNeighborsSettingItem::Construct(const FArguments& InArgs)
 {
 	WFCAsset = InArgs._WFCAsset.Get();
@@ -780,6 +822,59 @@ void SMyNeighborsSettingItem::Construct(const FArguments& InArgs)
 
 	int32 LeftIndex = WFCAsset->Neighbors.Find(Key)->Left.index;
 	int32 RightIndex = WFCAsset->Neighbors.Find(Key)->Right.index;
+
+	ETileRot rotL=ETileRot::None, rotR=ETileRot::None;
+	float degreesL=0, degreesR=0;
+	float xAxisL=1, yAxisL=1, xAxisR=1, yAxisR=1;
+
+	rotL = WFCAsset->Neighbors.Find(Key)->Left.Rot;
+	rotR = WFCAsset->Neighbors.Find(Key)->Right.Rot;
+
+	switch (rotL)
+	{
+	case ETileRot::None:
+		break;
+	case ETileRot::nine:
+		degreesL = 90;
+		break;
+	case ETileRot::OneEight:
+		degreesL = 180;
+		break;
+	case ETileRot::TowSeven:
+		degreesL = 270;
+		break;
+		/*case ETileRot::LR:
+			xAxis = -1;
+			break;
+		case ETileRot::UD:
+			yAxis = -1;
+			break;*/
+	default:
+		break;
+	}
+
+	switch (rotR)
+	{
+	case ETileRot::None:
+		break;
+	case ETileRot::nine:
+		degreesR = 90;
+		break;
+	case ETileRot::OneEight:
+		degreesR = 180;
+		break;
+	case ETileRot::TowSeven:
+		degreesR = 270;
+		break;
+		/*case ETileRot::LR:
+			xAxis = -1;
+			break;
+		case ETileRot::UD:
+			yAxis = -1;
+			break;*/
+	default:
+		break;
+	}
 
 	ChildSlot
 		[
@@ -790,6 +885,9 @@ void SMyNeighborsSettingItem::Construct(const FArguments& InArgs)
 			[
 				SNew(SImage)
 				.Image(WFCAsset->GetBrushInputByIndex(LeftIndex))
+				.RenderTransformPivot((FVector2D(0.5f, 0.5f)))
+				.RenderTransform(TransformCast<FSlateRenderTransform>(Concatenate(FShear2D(0, 0),
+					FScale2D(xAxisL, yAxisL), FQuat2D(3.14 * 2 * degreesL / 360))))
 			]
 			+ SHorizontalBox::Slot()
 			.AutoWidth()
@@ -797,6 +895,9 @@ void SMyNeighborsSettingItem::Construct(const FArguments& InArgs)
 			[
 				SNew(SImage)
 				.Image(WFCAsset->GetBrushInputByIndex(RightIndex))
+				.RenderTransformPivot((FVector2D(0.5f, 0.5f)))
+				.RenderTransform(TransformCast<FSlateRenderTransform>(Concatenate(FShear2D(0, 0),
+					FScale2D(xAxisR, yAxisR), FQuat2D(3.14 * 2 * degreesR / 360))))
 			]
 			+ SHorizontalBox::Slot()
 			.VAlign(VAlign_Center)

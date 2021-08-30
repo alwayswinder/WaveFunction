@@ -29,7 +29,7 @@ USTRUCT(BlueprintType)
 struct WAVEFUNCTIONRUNTIME_API FTilesInfo
 {
 	GENERATED_BODY()
-	FTilesInfo() {};
+		FTilesInfo() {};
 	FTilesInfo(int32 I, ETileRot TR)
 	{
 		index = I;
@@ -45,14 +45,14 @@ USTRUCT(BlueprintType)
 struct WAVEFUNCTIONRUNTIME_API FNeighborInfo
 {
 	GENERATED_BODY()
-		FNeighborInfo() {};
+	FNeighborInfo() {};
 	FNeighborInfo(int32 L, int32 R)
 	{
 		Left.index = L;
 		Right.index = R;
 	}
 	UPROPERTY(EditAnywhere)
-		FTilesInfo Left;
+	FTilesInfo Left;
 	UPROPERTY(EditAnywhere)
-		FTilesInfo Right;
+	FTilesInfo Right;
 };

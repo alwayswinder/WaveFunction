@@ -22,9 +22,10 @@ public:
 	void ReFillBrushes();
 	void ReFillInputBrushesWithRot();
 
-	void ReFillSymmetrys();
+	void ReFillSymmetrysAndFrequencys();
 	void ReFillNeighbors();
 	void RemoveNeighborByKey(int32 Key);
+	void ReFillNeighborLRAndUD();
 
 	void InputileIndexSelectedChange(int32 NewIndex);
 	int32 GetInputTileIndexSelected();
@@ -37,6 +38,7 @@ public:
 
 	void SetBrushOutputByRowAndCloumns(int32 r, int32 c);
 	void ClearBrushOutput();
+	void SaveTileInfoOutput();
 
 	void OnOutputAnalysis(int r, int c);
 	void OnOutputGenerate();
@@ -44,7 +46,7 @@ public:
 	int32 GetTilesNum();
 	int32 GetSymmetrysNum();
 	int32 GetOutputResultNumByRC(int32 r, int32 c);
-	ETileRot TileRotAdd(ETileRot inRot);
+
 	void ReSetIsPaint();
 	bool GetIsPaint();
 	/**/
@@ -53,14 +55,23 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WFCInput")
 	TArray<ESymmetry> Symmetrys;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WFCInput")
+	TArray<float> Frequencys;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WFCInput")
 	TMap<int32, FNeighborInfo> Neighbors;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WFCInput")
+	TArray<FNeighborInfo> NeighborsLR;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WFCInput")
+	TArray<FNeighborInfo> NeighborsUD;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="WFCOutput")
 	int32 OutputRows = 10;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WFCOutput")
 	int32 OutputColumns = 10;
 	int32 BrushSize = 64;
-	
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WFCOutput")
+	TArray<FTilesInfo> ResultListSave;
 
 	FPropertyChangeEvent PropertyChangeInput;
 	FPropertyChangeEvent PropertyChangeOutput;
@@ -68,13 +79,20 @@ public:
 	class SMyOutputTileItem* LastSelected;
 	/**/
 	TArray<FTilesInfo> InputTileInfoList;
+	
 
 private:
 	/**/
 	TArray<FSlateBrush> BrushesInput;
 	TArray<FSlateBrush> BrushesOutput;
 	TArray<TArray<FTilesInfo>> OutputTileInfoList;
-	TArray<TArray<TArray<int32>>> OutputTilesMaybe;
+	TArray<TArray<TArray<FTilesInfo>>> OutputTilesMaybe;
+	TArray<int32> OutputTimesApear;
+	TArray<float> OutputFresuqnceShould;
+
+	int32 RowNext;
+	int32 ColumnNext;
+	float SumFrequency;
 
 	TArray<TArray<int32>> TemplateIndexList;
 	UTexture2D* OutputInitTexture;
@@ -88,4 +106,8 @@ private:
 
 	void ReSizeBrushesOutput();
 	void ReFillOutputIndexList();
+
+	FTilesInfo TileRot180(FTilesInfo InTile);
+	FTilesInfo TileRot90(FTilesInfo InTile);
+	
 };

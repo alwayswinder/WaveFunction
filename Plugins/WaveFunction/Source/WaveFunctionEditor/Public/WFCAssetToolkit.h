@@ -53,6 +53,9 @@ protected:
 	TSharedRef<SWidget> ComboBoxDetailFilterWidget(TSharedPtr<FString> InItem);
 	FText GetSelectedComboBoxDetailFilterTextLabel() const;
 
+	void OnTextCommit(const FText& InText, ETextCommit::Type InCommitInfo);
+	FText GetFrequencyText()const;
+
 private:
 	TSharedPtr<class SComboBox<TSharedPtr<FString>>> Combox;
 	UWFCAsset* WFCAsset;
@@ -135,6 +138,8 @@ protected:
 
 	void TilsSettingReGenerate();
 	void NeighborsSettingReGenerate();
+	void NeighborsSettingReFill();
+
 
 private:
 	/**/
