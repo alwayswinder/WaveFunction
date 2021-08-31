@@ -107,6 +107,7 @@ void UWFCAsset::SetBrushOutputByRowAndCloumns(int32 r, int32 c)
 		{
 			OutputTileInfoList[r][c].index = InputTileInfoList[InputTileIndexSelected].index;
 			OutputTileInfoList[r][c].Rot = InputTileInfoList[InputTileIndexSelected].Rot;
+			OutputTimesApear[InputTileIndexSelected]++;
 			OnOutputAnalysis(r, c);
 		}
 		else
@@ -161,6 +162,7 @@ void UWFCAsset::SaveTileInfoOutput()
 			ResultListSave.Add(OutputTileInfoList[r][c]);
 		}
 	}
+	this->MarkPackageDirty();
 }
 
 void UWFCAsset::OnOutputAnalysis(int r, int c)
@@ -295,6 +297,7 @@ void UWFCAsset::OnOutputGenerate()
 {
 	float MinFrequency = 1.f;
 	int32 indexSelect = 0;
+	int32 indexSet = 0;
 	int index = 0;
 
 	for (int i = 0; i < OutputTilesMaybe[RowNext][ColumnNext].Num(); i++)
@@ -307,26 +310,31 @@ void UWFCAsset::OnOutputGenerate()
 				break;
 			}
 		}
-		float FrequenceNow = OutputTimesApear[index] / (float)(OutputRows * OutputColumns);
+		float FrequenceNow = 1.0f * OutputTimesApear[index] / (OutputRows * OutputColumns);
 		float FrequenceShould = OutputFresuqnceShould[index] / SumFrequency;
 		float FreTmp = FrequenceNow / FrequenceShould;
 		if (FreTmp < MinFrequency)
 		{
 			MinFrequency = FrequenceNow / FrequenceShould;
 			indexSelect = i;
+			indexSet = index;
 		}
 	}
-
 	if (OutputTilesMaybe.IsValidIndex(RowNext) && OutputTilesMaybe[RowNext].IsValidIndex(ColumnNext)
 		&& OutputTilesMaybe[RowNext][ColumnNext].IsValidIndex(indexSelect))
 	{
 		OutputTileInfoList[RowNext][ColumnNext] = OutputTilesMaybe[RowNext][ColumnNext][indexSelect];
 
-		OutputTimesApear[index]++;
+		OutputTimesApear[indexSet]++;
 
 		OnOutputAnalysis(RowNext, ColumnNext);
 
 		PropertyChangeOutput.Broadcast();
+	}
+
+	for (int i = 0; i < OutputTimesApear.Num(); i++)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("index=%d, times=%d"), i, OutputTimesApear[i]);
 	}
 }
 
