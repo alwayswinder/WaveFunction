@@ -40,7 +40,8 @@ public class WaveFunctionRuntime : ModuleRules
 				"SlateCore",
 				// ... add private dependencies that you statically link with here ...	
 				"UMG",
-            }
+				"AssetRegistry",
+			}
             );
 		
 		

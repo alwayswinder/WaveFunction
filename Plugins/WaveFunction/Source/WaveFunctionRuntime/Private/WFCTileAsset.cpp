@@ -1,6 +1,6 @@
-#include "WFCAsset.h"
+#include "WFCTileAsset.h"
 
-UWFCAsset::UWFCAsset()
+UWFCTileAsset::UWFCTileAsset()
 {
 	FSoftObjectPath TextureAsset(TEXT("Texture2D'/WaveFunction/Texture/Tile/medievalTile_58.medievalTile_58'"));
 	UObject* TextureObject = TextureAsset.ResolveObject();
@@ -15,7 +15,7 @@ UWFCAsset::UWFCAsset()
 	OutputInitBrush.SetResourceObject(OutputInitTexture);
 }
 
-void UWFCAsset::InitResBase(TArray<FAssetData>& InResBase)
+void UWFCTileAsset::InitResBase(TArray<FAssetData>& InResBase)
 {
 	for (auto AsserData:InResBase)
 	{
@@ -34,7 +34,7 @@ void UWFCAsset::InitResBase(TArray<FAssetData>& InResBase)
 	}
 }
 
-void UWFCAsset::InitSetting()
+void UWFCTileAsset::InitSetting()
 {
 	int k = 0;
 	OutputTileInfoList.Empty();
@@ -59,7 +59,7 @@ void UWFCAsset::InitSetting()
 	ReFillBrushes();	
 }
 
-FSlateBrush* UWFCAsset::GetBrushInputByTileIndex(int32 Index)
+FSlateBrush* UWFCTileAsset::GetBrushInputByTileIndex(int32 Index)
 {
 	if (InputTileInfoList.IsValidIndex(Index))
 	{
@@ -71,7 +71,7 @@ FSlateBrush* UWFCAsset::GetBrushInputByTileIndex(int32 Index)
 	return nullptr;
 }
 
-FSlateBrush* UWFCAsset::GetBrushOutputByRowAndCloumns(int32 r, int32 c)
+FSlateBrush* UWFCTileAsset::GetBrushOutputByRowAndCloumns(int32 r, int32 c)
 {
 	if (OutputTileInfoList.IsValidIndex(r) && OutputTileInfoList[r].IsValidIndex(c))
 	{
@@ -90,7 +90,7 @@ FSlateBrush* UWFCAsset::GetBrushOutputByRowAndCloumns(int32 r, int32 c)
 	return nullptr;
 }
 
-ETileRot UWFCAsset::GetOutputTileRotByRowAndCloumns(int32 r, int32 c)
+ETileRot UWFCTileAsset::GetOutputTileRotByRowAndCloumns(int32 r, int32 c)
 {
 	if (OutputTileInfoList.IsValidIndex(r) && OutputTileInfoList[r].IsValidIndex(c))
 	{
@@ -99,7 +99,7 @@ ETileRot UWFCAsset::GetOutputTileRotByRowAndCloumns(int32 r, int32 c)
 	return ETileRot::None;
 }
 
-void UWFCAsset::SetBrushOutputByRowAndCloumns(int32 r, int32 c)
+void UWFCTileAsset::SetBrushOutputByRowAndCloumns(int32 r, int32 c)
 {
 	if (OutputTileInfoList.IsValidIndex(r) && OutputTileInfoList[r].IsValidIndex(c))
 	{
@@ -120,7 +120,7 @@ void UWFCAsset::SetBrushOutputByRowAndCloumns(int32 r, int32 c)
 	PropertyChangeOutput.Broadcast();
 }
 
-void UWFCAsset::ClearBrushOutput()
+void UWFCTileAsset::ClearBrushOutput()
 {
 	ReFillOutputIndexList();
 	SumFrequency = 0;
@@ -152,7 +152,7 @@ void UWFCAsset::ClearBrushOutput()
 	}
 }
 
-void UWFCAsset::SaveTileInfoOutput()
+void UWFCTileAsset::SaveTileInfoOutput()
 {
 	ResultListSave.Empty();
 	for (int r=0; r<OutputTileInfoList.Num();r++)
@@ -165,7 +165,7 @@ void UWFCAsset::SaveTileInfoOutput()
 	this->MarkPackageDirty();
 }
 
-void UWFCAsset::OnOutputAnalysis(int r, int c)
+void UWFCTileAsset::OnOutputAnalysis(int r, int c)
 {
 	OutputTilesMaybe[r][c].Empty();
 	FTilesInfo LastTile = OutputTileInfoList[r][c];
@@ -279,6 +279,8 @@ void UWFCAsset::OnOutputAnalysis(int r, int c)
 	}
 	int32 MaxMaybe = InputTileInfoList.Num();
 
+	IsAllFilled = true;
+
 	for (int R=0; R<OutputTilesMaybe.Num(); R++)
 	{
 		for (int32 C = 0; C < OutputTilesMaybe[R].Num(); C++)
@@ -289,11 +291,16 @@ void UWFCAsset::OnOutputAnalysis(int r, int c)
 				RowNext = R;
 				ColumnNext = C;
 			}
+
+			if (OutputTilesMaybe[R][C].Num() > 0)
+			{
+				IsAllFilled = false;
+			}
 		}
 	}
 }
 
-void UWFCAsset::OnOutputGenerate()
+void UWFCTileAsset::OnOutputGenerate()
 {
 	float MinFrequency = 1.f;
 	int32 indexSelect = 0;
@@ -338,18 +345,26 @@ void UWFCAsset::OnOutputGenerate()
 	}
 }
 
-int32 UWFCAsset::GetTilesNum()
+void UWFCTileAsset::OnOutputFill()
+{
+	while (!IsAllFilled)
+	{
+		OnOutputGenerate();
+	}
+}
+
+int32 UWFCTileAsset::GetTilesNum()
 {
 	return BrushesInput.Num();
 }
 
-int32 UWFCAsset::GetSymmetrysNum()
+int32 UWFCTileAsset::GetSymmetrysNum()
 {
 	return Symmetrys.Num();
 }
 
 
-int32 UWFCAsset::GetOutputResultNumByRC(int32 r, int32 c)
+int32 UWFCTileAsset::GetOutputResultNumByRC(int32 r, int32 c)
 {
 	if (OutputTilesMaybe.IsValidIndex(r) && OutputTilesMaybe[r].IsValidIndex(c))
 	{
@@ -358,17 +373,17 @@ int32 UWFCAsset::GetOutputResultNumByRC(int32 r, int32 c)
 	return 0;
 }
 
-void UWFCAsset::ReSetIsPaint()
+void UWFCTileAsset::ReSetIsPaint()
 {
 	IsPaint = !IsPaint;
 }
 
-bool UWFCAsset::GetIsPaint()
+bool UWFCTileAsset::GetIsPaint()
 {
 	return IsPaint;
 }
 
-void UWFCAsset::ReFillBrushes()
+void UWFCTileAsset::ReFillBrushes()
 {
 	BrushesInput.Empty();
 	BrushesOutput.Empty();
@@ -396,7 +411,7 @@ void UWFCAsset::ReFillBrushes()
 }
 
 
-void UWFCAsset::ReFillInputBrushesWithRot()
+void UWFCTileAsset::ReFillInputBrushesWithRot()
 {
 	InputTileInfoList.Empty();
 
@@ -439,7 +454,7 @@ void UWFCAsset::ReFillInputBrushesWithRot()
 	}
 }
 
-void UWFCAsset::ReFillSymmetrysAndFrequencys()
+void UWFCTileAsset::ReFillSymmetrysAndFrequencys()
 {
 	if (Symmetrys.Num() == 0)
 	{
@@ -475,7 +490,7 @@ void UWFCAsset::ReFillSymmetrysAndFrequencys()
 	PropertyChangeOutput.Broadcast();
 }
 
-void UWFCAsset::ReFillNeighbors()
+void UWFCTileAsset::ReFillNeighbors()
 {
 	int32 key = 0;
 	for (int i=0; i< InputTileInfoList.Num(); i++)
@@ -491,12 +506,12 @@ void UWFCAsset::ReFillNeighbors()
 	}
 }
 
-void UWFCAsset::RemoveNeighborByKey(int32 Key)
+void UWFCTileAsset::RemoveNeighborByKey(int32 Key)
 {
 	Neighbors.Remove(Key);
 }
 
-void UWFCAsset::ReFillNeighborLRAndUD()
+void UWFCTileAsset::ReFillNeighborLRAndUD()
 {
 	NeighborsLR.Empty();
 	NeighborsUD.Empty();
@@ -518,17 +533,17 @@ void UWFCAsset::ReFillNeighborLRAndUD()
 	}
 }
 
-void UWFCAsset::InputileIndexSelectedChange(int32 NewIndex)
+void UWFCTileAsset::InputileIndexSelectedChange(int32 NewIndex)
 {
 	InputTileIndexSelected = NewIndex;
 }
 
-int32 UWFCAsset::GetInputTileIndexSelected()
+int32 UWFCTileAsset::GetInputTileIndexSelected()
 {
 	return InputTileIndexSelected;
 }
 
-void UWFCAsset::BrushSizeChange(FString ChangeType)
+void UWFCTileAsset::BrushSizeChange(FString ChangeType)
 {
 	if (ChangeType == "Add")
 	{
@@ -542,7 +557,7 @@ void UWFCAsset::BrushSizeChange(FString ChangeType)
 }
 
 
-FSlateBrush* UWFCAsset::GetBrushInputByIndex(int32 Index)
+FSlateBrush* UWFCTileAsset::GetBrushInputByIndex(int32 Index)
 {
 	if (BrushesInput.IsValidIndex(Index))
 	{
@@ -552,7 +567,7 @@ FSlateBrush* UWFCAsset::GetBrushInputByIndex(int32 Index)
 	return nullptr;
 }
 
-void UWFCAsset::ReSizeBrushesOutput()
+void UWFCTileAsset::ReSizeBrushesOutput()
 {
 	OutputInitBrush.ImageSize = FVector2D(BrushSize, BrushSize);
 
@@ -563,7 +578,7 @@ void UWFCAsset::ReSizeBrushesOutput()
 	PropertyChangeOutput.Broadcast();
 }
 
-void UWFCAsset::ReFillOutputIndexList()
+void UWFCTileAsset::ReFillOutputIndexList()
 {
 	OutputTileInfoList.Empty();
 	OutputTilesMaybe.Empty();
@@ -592,7 +607,7 @@ void UWFCAsset::ReFillOutputIndexList()
 	PropertyChangeOutput.Broadcast();
 }
 
-FTilesInfo UWFCAsset::TileRot180(FTilesInfo InTile)
+FTilesInfo UWFCTileAsset::TileRot180(FTilesInfo InTile)
 {
 	FTilesInfo Tmp = InTile;
 	switch (Symmetrys[InTile.index])
@@ -645,7 +660,7 @@ FTilesInfo UWFCAsset::TileRot180(FTilesInfo InTile)
 	return Tmp;
 }
 
-FTilesInfo UWFCAsset::TileRot90(FTilesInfo InTile)
+FTilesInfo UWFCTileAsset::TileRot90(FTilesInfo InTile)
 {
 	FTilesInfo Tmp = InTile;
 	switch (Symmetrys[InTile.index])
@@ -709,22 +724,22 @@ FTilesInfo UWFCAsset::TileRot90(FTilesInfo InTile)
 	return Tmp;
 }
 
-void UWFCAsset::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
+void UWFCTileAsset::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 {
 	Super::PostEditChangeProperty(PropertyChangedEvent);
 	if (PropertyChangedEvent.Property)
 		//&& PropertyChangedEvent.Property->GetFName() == GET_MEMBER_NAME_CHECKED(UWFCAsset, InputRes))
 	{
-		if (PropertyChangedEvent.Property->GetFName() == GET_MEMBER_NAME_CHECKED(UWFCAsset, InputRes))
+		if (PropertyChangedEvent.Property->GetFName() == GET_MEMBER_NAME_CHECKED(UWFCTileAsset, InputRes))
 		{
 			ReFillBrushes();
 		}
-		else if (PropertyChangedEvent.Property->GetFName() == GET_MEMBER_NAME_CHECKED(UWFCAsset, BrushSize))
+		else if (PropertyChangedEvent.Property->GetFName() == GET_MEMBER_NAME_CHECKED(UWFCTileAsset, BrushSize))
 		{
 			ReSizeBrushesOutput();
 		}
-		else if (PropertyChangedEvent.Property->GetFName() == GET_MEMBER_NAME_CHECKED(UWFCAsset, OutputRows)
-			|| PropertyChangedEvent.Property->GetFName() == GET_MEMBER_NAME_CHECKED(UWFCAsset, OutputColumns))
+		else if (PropertyChangedEvent.Property->GetFName() == GET_MEMBER_NAME_CHECKED(UWFCTileAsset, OutputRows)
+			|| PropertyChangedEvent.Property->GetFName() == GET_MEMBER_NAME_CHECKED(UWFCTileAsset, OutputColumns))
 		{
 			ReFillOutputIndexList();
 		}

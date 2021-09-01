@@ -1,6 +1,6 @@
 #include "WFCInputProcessor.h"
-#include "WFCAssetToolkit.h"
-#include "WFCAsset.h"
+#include "WFCTileAssetToolkit.h"
+#include "WFCTileAsset.h"
 
 static TSharedPtr<FWFCInputProcessor> WFCInputProcessorInstance;
 
@@ -31,7 +31,7 @@ void FWFCInputProcessor::Cleanup()
 }
 
 
-void FWFCInputProcessor::AddNewTab(TWeakPtr<SDockTab> Tab, UWFCAsset* Asset)
+void FWFCInputProcessor::AddNewTab(TWeakPtr<SDockTab> Tab, UWFCTileAsset* Asset)
 {
 	if (!TabMap.Contains(Tab))
 	{
@@ -65,7 +65,7 @@ bool FWFCInputProcessor::HandleMouseWheelOrGestureEvent(FSlateApplication& Slate
 		TSharedPtr<SDockTab> ActiveTab = TabManager->GetActiveTab();
 		if (ActiveTab.IsValid() && ActiveTab->GetTag() == "OutputTab" && TabMap.Contains(ActiveTab))
 		{	
-			UWFCAsset* AssetEdited = *TabMap.Find(ActiveTab);
+			UWFCTileAsset* AssetEdited = *TabMap.Find(ActiveTab);
 			if (!AssetEdited)
 			{
 				return false;

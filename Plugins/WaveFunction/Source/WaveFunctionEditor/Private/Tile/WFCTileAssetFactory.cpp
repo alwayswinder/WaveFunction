@@ -1,8 +1,8 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "WFCAssetFactory.h"
-#include "WFCAsset.h"
+#include "WFCTileAssetFactory.h"
+#include "WFCTileAsset.h"
 #include "ClassViewerFilter.h"
 #include "Widgets/Layout/SUniformGridPanel.h"
 #include "ClassViewerModule.h"
@@ -82,7 +82,7 @@ public:
 	}
 
 	/** Sets properties for the supplied AnimBlueprintFactory */
-	bool ConfigureProperties(TWeakObjectPtr<UWFCAssetFactory> InWFCFactory)
+	bool ConfigureProperties(TWeakObjectPtr<UWFCTileAssetFactory> InWFCFactory)
 	{
 		WFCFactory = InWFCFactory;
 
@@ -186,7 +186,7 @@ private:
 
 private:
 	/** The factory for which we are setting up properties */
-	TWeakObjectPtr<UWFCAssetFactory> WFCFactory;
+	TWeakObjectPtr<UWFCTileAssetFactory> WFCFactory;
 
 	/** A pointer to the window that is asking the user to select a parent class */
 	TWeakPtr<SWindow> PickerWindow;
@@ -207,17 +207,17 @@ private:
 
 };
 
-UWFCAssetFactory::UWFCAssetFactory(const FObjectInitializer& ObjectInitializer)
+UWFCTileAssetFactory::UWFCTileAssetFactory(const FObjectInitializer& ObjectInitializer)
 	:Super(ObjectInitializer)
 {
-	SupportedClass = UWFCAsset::StaticClass();
+	SupportedClass = UWFCTileAsset::StaticClass();
 	bCreateNew = true;
 	bEditAfterNew = true;
 }
 
-UObject* UWFCAssetFactory::FactoryCreateNew(UClass* InClass, UObject* InParent, FName InName, EObjectFlags Flags, UObject* Context, FFeedbackContext* Warn)
+UObject* UWFCTileAssetFactory::FactoryCreateNew(UClass* InClass, UObject* InParent, FName InName, EObjectFlags Flags, UObject* Context, FFeedbackContext* Warn)
 {
-	UWFCAsset* WFCObj =  Cast<UWFCAsset>(NewObject<UWFCAsset>(InParent, InClass, InName, Flags));
+	UWFCTileAsset* WFCObj =  Cast<UWFCTileAsset>(NewObject<UWFCTileAsset>(InParent, InClass, InName, Flags));
 	if (WFCObj)
 	{
 		WFCObj->InitResBase(ResBase);
@@ -225,7 +225,7 @@ UObject* UWFCAssetFactory::FactoryCreateNew(UClass* InClass, UObject* InParent, 
 	return WFCObj;
 }
 
-bool UWFCAssetFactory::ConfigureProperties()
+bool UWFCTileAssetFactory::ConfigureProperties()
 {
 	TSharedPtr<SWFCCreateDialog> Dialog = SNew(SWFCCreateDialog);
 	return Dialog->ConfigureProperties(this);

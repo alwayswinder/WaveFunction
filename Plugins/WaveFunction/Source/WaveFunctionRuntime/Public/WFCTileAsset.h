@@ -4,18 +4,18 @@
 
 #include "CoreMinimal.h"
 #include "WFCTypes.h"
-#include "WFCAsset.generated.h"
+#include "WFCTileAsset.generated.h"
 
 DECLARE_MULTICAST_DELEGATE(FPropertyChangeEvent)
 
 
 
 UCLASS(BlueprintType, Blueprintable)
-class WAVEFUNCTIONRUNTIME_API UWFCAsset : public UObject
+class WAVEFUNCTIONRUNTIME_API UWFCTileAsset : public UObject
 {
 	GENERATED_BODY()
 public:
-	UWFCAsset();
+	UWFCTileAsset();
 public:
 	void InitResBase(TArray<FAssetData>& InResBase);
 	void InitSetting();
@@ -42,6 +42,8 @@ public:
 
 	void OnOutputAnalysis(int r, int c);
 	void OnOutputGenerate();
+	void OnOutputFill();
+
 
 	int32 GetTilesNum();
 	int32 GetSymmetrysNum();
@@ -68,6 +70,7 @@ public:
 	int32 OutputRows = 10;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WFCOutput")
 	int32 OutputColumns = 10;
+	UPROPERTY()
 	int32 BrushSize = 64;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WFCOutput")
@@ -101,6 +104,7 @@ private:
 	int32 InputTileIndexSelected;
 
 	bool IsPaint = true;
+	bool IsAllFilled = false;
 	/***/
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 

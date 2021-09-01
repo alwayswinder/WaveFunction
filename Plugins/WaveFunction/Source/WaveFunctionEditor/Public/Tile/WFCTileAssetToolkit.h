@@ -5,14 +5,14 @@
 #include "Toolkits/AssetEditorToolkit.h"
 #include "WFCTypes.h"
 
-class UWFCAsset;
+class UWFCTileAsset;
 class SScrollBox;
 
 class SMyOutputTileItem : public SCompoundWidget
 {
 public:
 	SLATE_BEGIN_ARGS(SMyOutputTileItem) {}
-	SLATE_ATTRIBUTE(UWFCAsset*, WFCAsset)
+	SLATE_ATTRIBUTE(UWFCTileAsset*, WFCAsset)
 	SLATE_ATTRIBUTE(int32, InputTileIndex)
 	SLATE_ATTRIBUTE(bool, IsOutput)
 	SLATE_ATTRIBUTE(int32, RowIndex)
@@ -30,7 +30,7 @@ protected:
 private:
 	TSharedPtr<class SButton> Button;
 	TSharedPtr<class SBorder> Border;
-	UWFCAsset* WFCAsset;
+	UWFCTileAsset* WFCAsset;
 	int32 InputTileIndex;
 	bool IsOutput;
 	int32 RowIndex;
@@ -41,7 +41,7 @@ class SMyTilesSettingItem : public SCompoundWidget
 {
 public:
 	SLATE_BEGIN_ARGS(SMyTilesSettingItem) {}
-	SLATE_ATTRIBUTE(UWFCAsset*, WFCAsset)
+	SLATE_ATTRIBUTE(UWFCTileAsset*, WFCAsset)
 	SLATE_ATTRIBUTE(int32, BrushIndex)
 	SLATE_END_ARGS()
 
@@ -58,7 +58,7 @@ protected:
 
 private:
 	TSharedPtr<class SComboBox<TSharedPtr<FString>>> Combox;
-	UWFCAsset* WFCAsset;
+	UWFCTileAsset* WFCAsset;
 	int32 BrushIndex;
 };
 
@@ -66,7 +66,7 @@ class SMyNeighborsSettingItem : public SCompoundWidget
 {
 public:
 	SLATE_BEGIN_ARGS(SMyNeighborsSettingItem) {}
-	SLATE_ATTRIBUTE(UWFCAsset*, WFCAsset)
+	SLATE_ATTRIBUTE(UWFCTileAsset*, WFCAsset)
 	SLATE_ATTRIBUTE(TSharedPtr<SScrollBox>, ParentSlate)
 	SLATE_ATTRIBUTE(int32, Key)
 	SLATE_END_ARGS()
@@ -77,18 +77,18 @@ protected:
 
 private:
 	TSharedPtr<SScrollBox> ParentSlate;
-	UWFCAsset* WFCAsset;
+	UWFCTileAsset* WFCAsset;
 	int32 Key;
 
 };
 
-namespace FWFCAssetToolkitTabs
+namespace FWFCTileAssetToolkitTabs
 {
-	static const FName AppIdentifier("FWCAssetEditorApp");
-	static const FName InputTabID("Input");
+	static const FName AppIdentifier("FWFCTileAssetEditorApp");
+	static const FName InputTabID("TileInput");
 	static const FName TilesSettingTabID("TilesSetting");
-	static const FName NeighborsSettingTabID("NeighborsSetting");
-	static const FName OutputTabID("Output");
+	static const FName NeighborsSettingTabID("TileNeighborsSetting");
+	static const FName OutputTabID("TileOutput");
 }
 
 class FWFCAssetToolkit : public FAssetEditorToolkit, public FGCObject
@@ -108,9 +108,9 @@ public:
 	// FSerializableObject interface
 	virtual void AddReferencedObjects(FReferenceCollector& Collector) override;
 	/**/
-	void Initialize(UWFCAsset* InNewAsset, const EToolkitMode::Type InMode, const TSharedPtr<class IToolkitHost>
+	void Initialize(UWFCTileAsset* InNewAsset, const EToolkitMode::Type InMode, const TSharedPtr<class IToolkitHost>
 		EditWithinLevelEditor);
-	UWFCAsset* GetWFCAssetEdited() const { return WFCAsset; }
+	UWFCTileAsset* GetWFCAssetEdited() const { return WFCAsset; }
 protected:
 	TSharedRef<SDockTab> SpawnTab_Input(const FSpawnTabArgs& Args);
 	TSharedRef<SDockTab> SpawnTab_TilesSetting(const FSpawnTabArgs& Args);
@@ -121,6 +121,7 @@ protected:
 	void BrushStateChange();
 	void ClearOutput();
 	void OutputGenerate();
+	void OutputFill();
 	FText GetBrushStateText()const;
 
 
@@ -143,7 +144,7 @@ protected:
 
 private:
 	/**/
-	UWFCAsset* WFCAsset;
+	UWFCTileAsset* WFCAsset;
 	FDelegateHandle PropertyChangeHandleInput;
 	FDelegateHandle PropertyChangeHandleOutput;
 

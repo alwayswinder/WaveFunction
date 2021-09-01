@@ -1,7 +1,7 @@
-#include "WFCAssetToolkit.h"
+#include "WFCTileAssetToolkit.h"
 #include "SSingleObjectDetailsPanel.h"
 #include "EditorStyleSet.h"
-#include "WFCAsset.h"
+#include "WFCTileAsset.h"
 #include "Slate\SMeshWidget.h"
 #include "Slate\SlateVectorArtData.h"
 #include "Brushes\SlateBoxBrush.h"
@@ -12,10 +12,10 @@
 #define LOCTEXT_NAMESPACE "WFCEditor"
 
 
-class SWFCPropertiesTabBody : public SSingleObjectDetailsPanel
+class SWFCTilePropertiesTabBody : public SSingleObjectDetailsPanel
 {
 public:
-	SLATE_BEGIN_ARGS(SWFCPropertiesTabBody) {}
+	SLATE_BEGIN_ARGS(SWFCTilePropertiesTabBody) {}
 	SLATE_END_ARGS()
 
 private:
@@ -61,22 +61,22 @@ void FWFCAssetToolkit::RegisterTabSpawners(const TSharedRef<FTabManager>& InTabM
 
 	FAssetEditorToolkit::RegisterTabSpawners(InTabManager);
 
-	InTabManager->RegisterTabSpawner(FWFCAssetToolkitTabs::InputTabID, FOnSpawnTab::CreateSP(this, &FWFCAssetToolkit::SpawnTab_Input))
+	InTabManager->RegisterTabSpawner(FWFCTileAssetToolkitTabs::InputTabID, FOnSpawnTab::CreateSP(this, &FWFCAssetToolkit::SpawnTab_Input))
 		.SetDisplayName(LOCTEXT("InputTab", "Input"))
 		.SetGroup(WorkspaceMenuCategoryRef)
 		.SetIcon(FSlateIcon(FEditorStyle::GetStyleSetName(), "LevelEditor.Tabs.Details"));
 
-	InTabManager->RegisterTabSpawner(FWFCAssetToolkitTabs::TilesSettingTabID, FOnSpawnTab::CreateSP(this, &FWFCAssetToolkit::SpawnTab_TilesSetting))
+	InTabManager->RegisterTabSpawner(FWFCTileAssetToolkitTabs::TilesSettingTabID, FOnSpawnTab::CreateSP(this, &FWFCAssetToolkit::SpawnTab_TilesSetting))
 		.SetDisplayName(LOCTEXT("TilesSettingTab", "TilesSetting"))
 		.SetGroup(WorkspaceMenuCategoryRef)
 		.SetIcon(FSlateIcon(FEditorStyle::GetStyleSetName(), "LevelEditor.Tabs.Details"));
 
-	InTabManager->RegisterTabSpawner(FWFCAssetToolkitTabs::NeighborsSettingTabID, FOnSpawnTab::CreateSP(this, &FWFCAssetToolkit::SpawnTab_NeighborsSetting))
+	InTabManager->RegisterTabSpawner(FWFCTileAssetToolkitTabs::NeighborsSettingTabID, FOnSpawnTab::CreateSP(this, &FWFCAssetToolkit::SpawnTab_NeighborsSetting))
 		.SetDisplayName(LOCTEXT("NeighborsSettingTab", "NeighborsSetting"))
 		.SetGroup(WorkspaceMenuCategoryRef)
 		.SetIcon(FSlateIcon(FEditorStyle::GetStyleSetName(), "LevelEditor.Tabs.Details"));
 
-	InTabManager->RegisterTabSpawner(FWFCAssetToolkitTabs::OutputTabID, FOnSpawnTab::CreateSP(this, &FWFCAssetToolkit::SpawnTab_Output))
+	InTabManager->RegisterTabSpawner(FWFCTileAssetToolkitTabs::OutputTabID, FOnSpawnTab::CreateSP(this, &FWFCAssetToolkit::SpawnTab_Output))
 		.SetDisplayName(LOCTEXT("OutputTab", "Output"))
 		.SetGroup(WorkspaceMenuCategoryRef)
 		.SetIcon(FSlateIcon(FEditorStyle::GetStyleSetName(), "LevelEditor.Tabs.Modes"));
@@ -127,7 +127,7 @@ void FWFCAssetToolkit::AddReferencedObjects(FReferenceCollector& Collector)
 	Collector.AddReferencedObject(WFCAsset);
 }
 
-void FWFCAssetToolkit::Initialize(class UWFCAsset* InNewAsset, const EToolkitMode::Type InMode, const TSharedPtr<class IToolkitHost> EditWithinLevelEditor)
+void FWFCAssetToolkit::Initialize(class UWFCTileAsset* InNewAsset, const EToolkitMode::Type InMode, const TSharedPtr<class IToolkitHost> EditWithinLevelEditor)
 {
 	GEditor->GetEditorSubsystem<UAssetEditorSubsystem>()->CloseOtherEditors(InNewAsset, this);
 	WFCAsset = InNewAsset;
@@ -157,7 +157,7 @@ void FWFCAssetToolkit::Initialize(class UWFCAsset* InNewAsset, const EToolkitMod
 					FTabManager::NewStack()
 					->SetSizeCoefficient(0.3f)
 					->SetHideTabWell(true)
-					->AddTab(FWFCAssetToolkitTabs::InputTabID, ETabState::OpenedTab)
+					->AddTab(FWFCTileAssetToolkitTabs::InputTabID, ETabState::OpenedTab)
 				)
 				->Split
 				(
@@ -165,9 +165,9 @@ void FWFCAssetToolkit::Initialize(class UWFCAsset* InNewAsset, const EToolkitMod
 					FTabManager::NewStack()
 					->SetSizeCoefficient(0.2f)
 					->SetHideTabWell(true)
-					->AddTab(FWFCAssetToolkitTabs::TilesSettingTabID, ETabState::OpenedTab)
-					->AddTab(FWFCAssetToolkitTabs::NeighborsSettingTabID, ETabState::ClosedTab)
-					->SetForegroundTab(FWFCAssetToolkitTabs::TilesSettingTabID)
+					->AddTab(FWFCTileAssetToolkitTabs::TilesSettingTabID, ETabState::OpenedTab)
+					->AddTab(FWFCTileAssetToolkitTabs::NeighborsSettingTabID, ETabState::OpenedTab)
+					->SetForegroundTab(FWFCTileAssetToolkitTabs::TilesSettingTabID)
 				)
 				->Split
 				(
@@ -175,12 +175,12 @@ void FWFCAssetToolkit::Initialize(class UWFCAsset* InNewAsset, const EToolkitMod
 					FTabManager::NewStack()
 					->SetSizeCoefficient(0.5f)
 					->SetHideTabWell(true)
-					->AddTab(FWFCAssetToolkitTabs::OutputTabID, ETabState::OpenedTab)
+					->AddTab(FWFCTileAssetToolkitTabs::OutputTabID, ETabState::OpenedTab)
 				)
 			)
 		);
 
-	InitAssetEditor(InMode, EditWithinLevelEditor, FWFCAssetToolkitTabs::AppIdentifier, WFCLayout, true, true, InNewAsset);
+	InitAssetEditor(InMode, EditWithinLevelEditor, FWFCTileAssetToolkitTabs::AppIdentifier, WFCLayout, true, true, InNewAsset);
 	RegenerateMenusAndToolbars();
 	TilsSettingGenerate();
 	NeighborsSettingGenerate(); 
@@ -212,7 +212,7 @@ TSharedRef<SDockTab> FWFCAssetToolkit::SpawnTab_Input(const FSpawnTabArgs& Args)
 			+SScrollBox::Slot()
 			.Padding(2, 5, 2, 5)
 			[
-				SNew(SWFCPropertiesTabBody, WFCEditorPtr)
+				SNew(SWFCTilePropertiesTabBody, WFCEditorPtr)
 			]
 		];
 }
@@ -323,6 +323,14 @@ TSharedRef<SDockTab> FWFCAssetToolkit::SpawnTab_Output(const FSpawnTabArgs& Args
 					.Text(FText::FromString("Generate"))
 					.OnPressed(this, &FWFCAssetToolkit::OutputGenerate)
 				]
+				+ SHorizontalBox::Slot()
+				.AutoWidth()
+				.VAlign(VAlign_Center)
+				[
+					SNew(SButton)
+					.Text(FText::FromString("Fill"))
+					.OnPressed(this, &FWFCAssetToolkit::OutputFill)
+				]
 			]
 			+SVerticalBox::Slot()
 			.FillHeight(1.0)
@@ -373,6 +381,11 @@ void FWFCAssetToolkit::ClearOutput()
 void FWFCAssetToolkit::OutputGenerate()
 {
 	WFCAsset->OnOutputGenerate();
+}
+
+void FWFCAssetToolkit::OutputFill()
+{
+	WFCAsset->OnOutputFill();
 }
 
 FText FWFCAssetToolkit::GetBrushStateText() const 
@@ -471,37 +484,43 @@ void FWFCAssetToolkit::ReFillOutputResHbxs()
 
 void FWFCAssetToolkit::TilsSettingGenerate()
 {
-	TilesSettingSSC->ClearChildren();
-	if (WFCAsset)
+	if (TilesSettingSSC.IsValid())
 	{
-		for (int32 i=0; i<WFCAsset->GetSymmetrysNum(); i++)
+		TilesSettingSSC->ClearChildren();
+		if (WFCAsset)
 		{
-			TilesSettingSSC->AddSlot()
-			.HAlign(HAlign_Left)
-			[
-				SNew(SMyTilesSettingItem)
-				.WFCAsset(WFCAsset)
-				.BrushIndex(i)
-			];
+			for (int32 i = 0; i < WFCAsset->GetSymmetrysNum(); i++)
+			{
+				TilesSettingSSC->AddSlot()
+					.HAlign(HAlign_Left)
+					[
+						SNew(SMyTilesSettingItem)
+						.WFCAsset(WFCAsset)
+					.BrushIndex(i)
+					];
+			}
 		}
 	}
 }
 
 void FWFCAssetToolkit::NeighborsSettingGenerate()
 {
-	NeighborsSettingSSC->ClearChildren();
-	if (WFCAsset)
+	if (NeighborsSettingSSC.IsValid())
 	{
-		for (auto& Elem : WFCAsset->Neighbors)
+		NeighborsSettingSSC->ClearChildren();
+		if (WFCAsset)
 		{
-			NeighborsSettingSSC->AddSlot()
-			.HAlign(HAlign_Left)
-			[
-				SNew(SMyNeighborsSettingItem)
-				.WFCAsset(WFCAsset)
-				.Key(Elem.Key)
-				.ParentSlate(NeighborsSettingSSC)
-			];
+			for (auto& Elem : WFCAsset->Neighbors)
+			{
+				NeighborsSettingSSC->AddSlot()
+					.HAlign(HAlign_Left)
+					[
+						SNew(SMyNeighborsSettingItem)
+						.WFCAsset(WFCAsset)
+					.Key(Elem.Key)
+					.ParentSlate(NeighborsSettingSSC)
+					];
+			}
 		}
 	}
 }

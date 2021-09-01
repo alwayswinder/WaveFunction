@@ -4,10 +4,10 @@
 
 #include "AssetTypeActions_Base.h"
 
-class FWFCAssetAction : public FAssetTypeActions_Base
+class FWFCTileAssetAction : public FAssetTypeActions_Base
 {
 public:
-	FWFCAssetAction(uint32 InAssetCategory);
+	FWFCTileAssetAction(uint32 InAssetCategory);
 
 	virtual uint32 GetCategories()override;
 	virtual FText GetName()const override;

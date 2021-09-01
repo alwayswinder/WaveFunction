@@ -18,8 +18,10 @@ public class WaveFunctionEditor : ModuleRules
 		PrivateIncludePaths.AddRange(
 			new string[] {
 				// ... add other private include paths required here ...
-			}
-			);
+				"WaveFunctionEditor/Public/Tile",
+                "WaveFunctionEditor/Public/Overlap",
+            }
+            );
 			
 		
 		PublicDependencyModuleNames.AddRange(

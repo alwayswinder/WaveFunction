@@ -1,19 +1,23 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "WaveFunctionEditor.h"
-#include "WFCAssetAction.h"
+#include "WFCTileAssetAction.h"
 #include "WFCInputProcessor.h"
 
 #define LOCTEXT_NAMESPACE "FWaveFunctionEditorModule"
 
 uint32 FWaveFunctionEditorModule::GameAssetCategory;
 
+
 void FWaveFunctionEditorModule::StartupModule()
 {
 	// This code will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
 	IAssetTools& AssetTools = FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools").Get();
 	GameAssetCategory = AssetTools.RegisterAdvancedAssetCategory(FName(TEXT("WFCAsset")), LOCTEXT("WFCPluginCategory", "WFCAsset"));
-	AssetActions.Add(MakeShareable(new FWFCAssetAction(GameAssetCategory)));
+
+	AssetActions.Add(MakeShareable(new FWFCTileAssetAction(GameAssetCategory)));
+	AssetActions.Add(MakeShareable(new FWFCOverlapAssetAction(GameAssetCategory)));
+
 	for (auto Action : AssetActions)
 	{
 		AssetTools.RegisterAssetTypeActions(Action.ToSharedRef());

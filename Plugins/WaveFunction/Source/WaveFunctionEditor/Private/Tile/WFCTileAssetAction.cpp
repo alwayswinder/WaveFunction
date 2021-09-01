@@ -1,40 +1,40 @@
-#include "WFCAssetAction.h"
-#include "WFCAsset.h"
-#include "WFCAssetToolkit.h"
+#include "WFCTileAssetAction.h"
+#include "WFCTileAsset.h"
+#include "WFCTileAssetToolkit.h"
 #include "WFCInputProcessor.h"
 
-FWFCAssetAction::FWFCAssetAction(uint32 InAssetCategory)
+FWFCTileAssetAction::FWFCTileAssetAction(uint32 InAssetCategory)
 	: WFCAssetCategory(InAssetCategory)
 {
 }
 
-uint32 FWFCAssetAction::GetCategories()
+uint32 FWFCTileAssetAction::GetCategories()
 {
 	return WFCAssetCategory;
 }
 
-FText FWFCAssetAction::GetName() const
+FText FWFCTileAssetAction::GetName() const
 {
 	return FText::FromString(GetSupportedClass()->GetName());
 }
 
-UClass* FWFCAssetAction::GetSupportedClass() const
+UClass* FWFCTileAssetAction::GetSupportedClass() const
 {
-	return UWFCAsset::StaticClass();
+	return UWFCTileAsset::StaticClass();
 }
 
-FColor FWFCAssetAction::GetTypeColor() const
+FColor FWFCTileAssetAction::GetTypeColor() const
 {
 	return FColor::Green;
 }
 
-void FWFCAssetAction::OpenAssetEditor(const TArray<UObject*>& InObjects, TSharedPtr<class IToolkitHost>
+void FWFCTileAssetAction::OpenAssetEditor(const TArray<UObject*>& InObjects, TSharedPtr<class IToolkitHost>
 	EditWithinLevelEditor /*= TSharedPtr<IToolkitHost>()*/)
 {
 	EToolkitMode::Type Mode = EditWithinLevelEditor.IsValid() ? EToolkitMode::WorldCentric : EToolkitMode::Standalone;
 	for (auto Obj = InObjects.CreateConstIterator(); Obj; ++Obj)
 	{
-		auto NewAsset = Cast<UWFCAsset>(*Obj);
+		auto NewAsset = Cast<UWFCTileAsset>(*Obj);
 		if (NewAsset)
 		{
 			TSharedRef<FWFCAssetToolkit> EditorToolkit = MakeShareable(new FWFCAssetToolkit());

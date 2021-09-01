@@ -5,20 +5,19 @@
 #include "CoreMinimal.h"
 #include "Factories\Factory.h"
 #include "EditorReimportHandler.h"
-#include "WFCAssetFactory.generated.h"
+#include "WFCOverlapAssetFactory.generated.h"
 
 /**
  *
  */
 UCLASS()
-class  UWFCAssetFactory : public UFactory
+class  UWFCOverlapAssetFactory : public UFactory
 {
 	GENERATED_UCLASS_BODY()
 public:
 	/**/
 	virtual UObject* FactoryCreateNew(UClass* InClass, UObject* InParent, FName InName, EObjectFlags Flags,
 		UObject* Context, FFeedbackContext* Warn)override;
-	virtual bool ConfigureProperties() override;
 public:
 	TArray<FAssetData> ResBase;
 };

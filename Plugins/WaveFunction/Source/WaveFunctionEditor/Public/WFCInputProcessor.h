@@ -5,13 +5,13 @@
 #include "CoreMinimal.h"
 #include "GenericPlatform/ICursor.h"
 #include "Framework/Application/IInputProcessor.h"
-#include "WFCAssetToolkit.h"
+#include "WFCTileAssetToolkit.h"
 
 class FSlateApplication;
 struct FAnalogInputEvent;
 struct FKeyEvent;
 struct FPointerEvent;
-class UWFCAsset;
+class UWFCTileAsset;
 
 class FWFCInputProcessor
 	: public TSharedFromThis<FWFCInputProcessor>
@@ -25,7 +25,7 @@ public:
 	static FWFCInputProcessor& Get();
 
 	void Cleanup();
-	void AddNewTab(TWeakPtr<SDockTab> Tab, UWFCAsset* Asset);
+	void AddNewTab(TWeakPtr<SDockTab> Tab, UWFCTileAsset* Asset);
 	void RemoveTab(TWeakPtr<SDockTab> Tab);
 	//~ IInputProcess overrides
 	virtual void Tick(const float DeltaTime, FSlateApplication& SlateApp, TSharedRef<ICursor> Cursor) override;
@@ -36,5 +36,5 @@ public:
 
 private:
 	FWFCInputProcessor();
-	TMap<TWeakPtr<SDockTab>, UWFCAsset*> TabMap;
+	TMap<TWeakPtr<SDockTab>, UWFCTileAsset*> TabMap;
 };
