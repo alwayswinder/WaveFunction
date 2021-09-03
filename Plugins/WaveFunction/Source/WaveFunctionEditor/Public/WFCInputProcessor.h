@@ -11,7 +11,7 @@ class FSlateApplication;
 struct FAnalogInputEvent;
 struct FKeyEvent;
 struct FPointerEvent;
-class UWFCTileAsset;
+class UWFCParentAsset;
 
 class FWFCInputProcessor
 	: public TSharedFromThis<FWFCInputProcessor>
@@ -25,7 +25,7 @@ public:
 	static FWFCInputProcessor& Get();
 
 	void Cleanup();
-	void AddNewTab(TWeakPtr<SDockTab> Tab, UWFCTileAsset* Asset);
+	void AddNewTab(TWeakPtr<SDockTab> Tab, UWFCParentAsset* Asset);
 	void RemoveTab(TWeakPtr<SDockTab> Tab);
 	//~ IInputProcess overrides
 	virtual void Tick(const float DeltaTime, FSlateApplication& SlateApp, TSharedRef<ICursor> Cursor) override;
@@ -36,5 +36,5 @@ public:
 
 private:
 	FWFCInputProcessor();
-	TMap<TWeakPtr<SDockTab>, UWFCTileAsset*> TabMap;
+	TMap<TWeakPtr<SDockTab>, UWFCParentAsset*> TabMap;
 };

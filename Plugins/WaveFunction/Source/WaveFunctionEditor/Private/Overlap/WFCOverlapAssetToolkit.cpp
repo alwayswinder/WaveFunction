@@ -3,6 +3,7 @@
 #include "EditorStyleSet.h"
 #include "WFCOverlapAsset.h"
 #include "Widgets\Layout\SScrollBox.h"
+#include "WFCInputProcessor.h"
 
 
 #define LOCTEXT_NAMESPACE "WFCOverlapEditor"
@@ -46,7 +47,6 @@ public:
 
 FWFCOverlapAssetToolkit::FWFCOverlapAssetToolkit()
 {
-
 }
 
 void FWFCOverlapAssetToolkit::RegisterTabSpawners(const TSharedRef<FTabManager>& InTabManager)
@@ -65,6 +65,12 @@ void FWFCOverlapAssetToolkit::RegisterTabSpawners(const TSharedRef<FTabManager>&
 		.SetDisplayName(LOCTEXT("OverlapOutputTab", "OverlapOutput"))
 		.SetGroup(WorkspaceMenuCategoryRef)
 		.SetIcon(FSlateIcon(FEditorStyle::GetStyleSetName(), "LevelEditor.Tabs.Modes"));
+
+	if (WFCAsset)
+	{
+		//PropertyChangeHandleInput = WFCAsset->PropertyChangeInput.AddRaw(this, &FWFCAssetToolkit::RefreshInputTab);
+		PropertyChangeHandleOutput = WFCAsset->PropertyChangeOutput.AddRaw(this, &FWFCOverlapAssetToolkit::RefreshOutputTab);
+	}
 }
 
 void FWFCOverlapAssetToolkit::UnregisterTabSpawners(const TSharedRef<FTabManager>& InTabManager)
@@ -94,7 +100,8 @@ FLinearColor FWFCOverlapAssetToolkit::GetWorldCentricTabColorScale() const
 
 bool FWFCOverlapAssetToolkit::OnRequestClose()
 {
-
+	FWFCInputProcessor::Get().RemoveTab(OutputTab);
+	WFCAsset->PropertyChangeOutput.Remove(PropertyChangeHandleOutput);
 	return  true;
 }
 
@@ -163,7 +170,11 @@ TSharedRef<SDockTab> FWFCOverlapAssetToolkit::SpawnTab_Input(const FSpawnTabArgs
 
 TSharedRef<SDockTab> FWFCOverlapAssetToolkit::SpawnTab_Output(const FSpawnTabArgs& Args)
 {
-	return SNew(SDockTab)
+	OutputVbx = SNew(SVerticalBox);
+
+	RefreshOutputTab();
+
+	OutputTab =  SNew(SDockTab)
 		.ContentPadding(20)
 		[
 			SNew(SVerticalBox)
@@ -192,28 +203,30 @@ TSharedRef<SDockTab> FWFCOverlapAssetToolkit::SpawnTab_Output(const FSpawnTabArg
 				.AutoWidth()
 				.VAlign(VAlign_Center)
 				[
-					SNew(SButton)
+					SAssignNew(FillButton, SButton)
 					.Text(FText::FromString("Fill"))
+					.Visibility(EVisibility::Hidden)
 					.OnPressed(this, &FWFCOverlapAssetToolkit::FillOutput)
 				]
 			]
-			+ SVerticalBox::Slot()
+			+SVerticalBox::Slot()
 			.FillHeight(1.0)
 			.VAlign(VAlign_Center)
 			.HAlign(HAlign_Center)
 			[
-				SNew(SImage)
-				.Image(&(WFCAsset->OutputBrush))
-				.RenderTransformPivot((FVector2D(0.5f, 0.5f)))
-				.RenderTransform(TransformCast<FSlateRenderTransform>(Concatenate(FShear2D(0, 0),
-					FScale2D(WFCAsset->OutputXScale, WFCAsset->OutputYScale), FQuat2D(0))))
+				OutputVbx.ToSharedRef()
 			]
 		];
+	FWFCInputProcessor::Get().AddNewTab(OutputTab, WFCAsset);
+
+	return OutputTab.ToSharedRef();
+
 }
 
 void FWFCOverlapAssetToolkit::Analyse()
 {
 	WFCAsset->Analyse();
+	//FillButton->SetVisibility(EVisibility::Visible);
 }
 
 void FWFCOverlapAssetToolkit::ClearOutput()
@@ -224,6 +237,90 @@ void FWFCOverlapAssetToolkit::ClearOutput()
 void FWFCOverlapAssetToolkit::FillOutput()
 {
 	WFCAsset->FillOutput();
+}
+
+void FWFCOverlapAssetToolkit::RefreshOutputTab()
+{
+	if (WFCAsset && OutputVbx.IsValid())
+	{
+		OutputVbx->ClearChildren();
+		/*for (int32 r = 0; r < WFCAsset->OutputRow; r++)
+		{
+			TSharedPtr<SHorizontalBox> TmpHbx = SNew(SHorizontalBox);
+
+			for (int32 c = 0; c < WFCAsset->OutputColumn; c++)
+			{
+				TmpHbx->AddSlot()
+					.AutoWidth()
+					.VAlign(VAlign_Center)
+					.Padding(0)
+					[
+						SNew(SBorder)
+						.VAlign(VAlign_Fill)
+						.HAlign(HAlign_Fill)
+						.Padding(0)
+						[
+							SNew(SMyOutputOverlapItem)
+							.WFCAsset(WFCAsset)
+							.RowIndex(r)
+							.ColumnIndex(c)
+						]
+					];
+			}
+			OutputVbx->AddSlot()
+				.AutoHeight()
+				.HAlign(HAlign_Center)
+				.Padding(0)
+				[
+					TmpHbx.ToSharedRef()
+				];
+		}*/
+		OutputVbx->AddSlot()
+			.FillHeight(1.0)
+			.VAlign(VAlign_Center)
+			.HAlign(HAlign_Center)
+			[
+				SNew(SImage)
+				.Image(&(WFCAsset->OutputBrush))
+				.RenderTransformPivot((FVector2D(0.5f, 0.5f)))
+				.RenderTransform(TransformCast<FSlateRenderTransform>(Concatenate(FShear2D(0, 0),
+					FScale2D(WFCAsset->OutputScale, WFCAsset->OutputScale), FQuat2D(0))))
+			];
+	}
+}
+
+
+
+void SMyOutputOverlapItem::Construct(const FArguments& InArgs)
+{
+	WFCAsset = InArgs._WFCAsset.Get();
+	RowIndex = InArgs._RowIndex.Get();
+	ColumnIndex = InArgs._ColumnIndex.Get();
+
+	ChildSlot
+		[
+			SNew(SBorder)
+			.Padding(1)
+			.VAlign(VAlign_Fill)
+			.HAlign(HAlign_Fill)
+			.RenderTransformPivot((FVector2D(0.5f, 0.5f)))
+			.RenderTransform(TransformCast<FSlateRenderTransform>(Concatenate(FShear2D(0, 0),
+				FScale2D(0.5, 0.5), FQuat2D(0))))
+			[
+				SNew(STextBlock)
+				.Text(this, &SMyOutputOverlapItem::GetNumofResult)
+			]
+		];
+}
+
+FText SMyOutputOverlapItem::GetNumofResult() const
+{
+	int num = -1;
+	if (WFCAsset->OutputTilesMaybe.Num() > 0)
+	{
+		num = WFCAsset->OutputTilesMaybe[RowIndex][ColumnIndex].Num();
+	}
+	return FText::FromString(FString::FromInt(num));
 }
 
 #undef LOCTEXT_NAMESPACE

@@ -4,14 +4,12 @@
 
 #include "CoreMinimal.h"
 #include "WFCTypes.h"
+#include "WFCParentAsset.h"
 #include "WFCTileAsset.generated.h"
-
-DECLARE_MULTICAST_DELEGATE(FPropertyChangeEvent)
-
 
 
 UCLASS(BlueprintType, Blueprintable)
-class WAVEFUNCTIONRUNTIME_API UWFCTileAsset : public UObject
+class WAVEFUNCTIONRUNTIME_API UWFCTileAsset : public UWFCParentAsset
 {
 	GENERATED_BODY()
 public:
@@ -30,7 +28,7 @@ public:
 	void InputileIndexSelectedChange(int32 NewIndex);
 	int32 GetInputTileIndexSelected();
 
-	void BrushSizeChange(FString ChangeType = "Add");
+	virtual void BrushSizeChange(FString ChangeType = "Add") override;
 	FSlateBrush* GetBrushInputByIndex(int32 Index);
 	FSlateBrush* GetBrushInputByTileIndex(int32 Index);
 	FSlateBrush* GetBrushOutputByRowAndCloumns(int32 r, int32 c);
@@ -75,9 +73,6 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WFCOutput")
 	TArray<FTilesInfo> ResultListSave;
-
-	FPropertyChangeEvent PropertyChangeInput;
-	FPropertyChangeEvent PropertyChangeOutput;
 
 	class SMyOutputTileItem* LastSelected;
 	/**/

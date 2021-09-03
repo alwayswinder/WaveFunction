@@ -5,6 +5,29 @@
 #include "Toolkits/AssetEditorToolkit.h"
 #include "WFCTypes.h"
 
+class UWFCOverlapAsset;
+
+
+
+class SMyOutputOverlapItem : public SCompoundWidget
+{
+public:
+	SLATE_BEGIN_ARGS(SMyOutputOverlapItem) {}
+	SLATE_ATTRIBUTE(UWFCOverlapAsset*, WFCAsset)
+	SLATE_ATTRIBUTE(int32, RowIndex)
+	SLATE_ATTRIBUTE(int32, ColumnIndex)
+	SLATE_END_ARGS()
+
+	void Construct(const FArguments& InArgs);
+protected:
+	FText GetNumofResult()const;
+private:
+	UWFCOverlapAsset* WFCAsset;
+	int32 RowIndex;
+	int32 ColumnIndex;
+};
+
+class UWFCOverlapAsset;
 namespace FWFCOverlapAssetToolkitTabs
 {
 	static const FName AppIdentifier("FWFCOverlapAssetEditorApp");
@@ -36,11 +59,17 @@ public:
 protected:
 	TSharedRef<SDockTab> SpawnTab_Input(const FSpawnTabArgs& Args);
 	TSharedRef<SDockTab> SpawnTab_Output(const FSpawnTabArgs& Args);
+	FDelegateHandle PropertyChangeHandleOutput;
+	TSharedPtr<SVerticalBox> OutputVbx;
+	TSharedPtr<SButton> FillButton;
 
 	/*widget event*/
 	void Analyse();
 	void ClearOutput();
 	void FillOutput();
+	void RefreshOutputTab();
 private:
 	UWFCOverlapAsset* WFCAsset;
+	TSharedPtr<SDockTab> OutputTab;
+
 };

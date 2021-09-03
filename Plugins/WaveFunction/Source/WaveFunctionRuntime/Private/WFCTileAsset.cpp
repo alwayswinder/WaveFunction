@@ -162,7 +162,7 @@ void UWFCTileAsset::SaveTileInfoOutput()
 			ResultListSave.Add(OutputTileInfoList[r][c]);
 		}
 	}
-	this->MarkPackageDirty();
+	//this->MarkPackageDirty();
 }
 
 void UWFCTileAsset::OnOutputAnalysis(int r, int c)
@@ -555,7 +555,6 @@ void UWFCTileAsset::BrushSizeChange(FString ChangeType)
 	}
 	ReSizeBrushesOutput();
 }
-
 
 FSlateBrush* UWFCTileAsset::GetBrushInputByIndex(int32 Index)
 {

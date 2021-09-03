@@ -24,7 +24,7 @@ UObject* UWFCOverlapAssetFactory::FactoryCreateNew(UClass* InClass, UObject* InP
 	UWFCOverlapAsset* WFCObj = Cast<UWFCOverlapAsset>(NewObject<UWFCOverlapAsset>(InParent, InClass, InName, Flags));
 	if (WFCObj)
 	{
-		//
+		WFCObj->InitCreated();
 	}
 	return WFCObj;
 }
