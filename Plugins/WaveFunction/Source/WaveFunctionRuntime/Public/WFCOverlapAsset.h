@@ -32,11 +32,13 @@ public:
 	int32 OutputColumn = 128;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WFCOutput")
 	int32 StepOnce = 10;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WFCOutput")
+	bool UseRotAndReflect = false;
 	UPROPERTY()
 	TArray<FPixelInfo> PixelsOutput;
 	UPROPERTY()
 	TArray<FPixelInfo> PixelInput;
-
+	int32 Test = 0;
 	/*interface*/
 	void Analyse();
 	void ClearOutput();

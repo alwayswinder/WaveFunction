@@ -99,6 +99,51 @@ struct WAVEFUNCTIONRUNTIME_API FOverlapTileInfo
 	UPROPERTY()
 	int32 TileSize = 3;
 	TArray<TArray<FPixelInfo>> Data;
+	int32 TileTimesRes = 1;
+	int32 TileTimesFill = 0;
+
+	static FOverlapTileInfo Rot90(FOverlapTileInfo InTile)
+	{
+		FOverlapTileInfo RetTile(InTile.TileSize);
+		int32 size = InTile.TileSize;
+
+		for (int r = 0; r < size; r++)
+		{
+			for (int c = 0; c < size; c++)
+			{
+				RetTile.Data[r][c] = InTile.Data[c][size - r -1];
+			}
+		}
+		return RetTile;
+	}
+	static FOverlapTileInfo Rot180(FOverlapTileInfo InTile)
+	{
+		FOverlapTileInfo RetTile(InTile.TileSize);
+		int32 size = InTile.TileSize;
+
+		for (int r = 0; r < size; r++)
+		{
+			for (int c = 0; c < size; c++)
+			{
+				RetTile.Data[r][c] = InTile.Data[size - c - 1][size - r - 1];
+			}
+		}
+		return RetTile;
+	}
+	static FOverlapTileInfo Reflect(FOverlapTileInfo InTile)
+	{
+		FOverlapTileInfo RetTile(InTile.TileSize);
+		int32 size = InTile.TileSize;
+
+		for (int r = 0; r < size; r++)
+		{
+			for (int c = 0; c < size; c++)
+			{
+				RetTile.Data[r][c] = InTile.Data[r][size - c - 1];
+			}
+		}
+		return RetTile;
+	}
 };
 
 USTRUCT(BlueprintType)
@@ -115,4 +160,5 @@ struct WAVEFUNCTIONRUNTIME_API FOverlapNeighborInfo
 	int32 Left;
 	UPROPERTY(EditAnywhere)
 	int32 Right;
+	int num = 0;
 };
