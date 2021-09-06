@@ -35,6 +35,7 @@ void UWFCOverlapAsset::Analyse()
 
 	AllOverlapTiles.Empty();
 	PixelInput.Empty();
+
 	ReadFromTexture();
 
 	PixelRC.Empty();
@@ -119,7 +120,8 @@ void UWFCOverlapAsset::ClearOutput()
 
 void UWFCOverlapAsset::FillOutput()
 {
-	while(!IsAllSet)
+	int Steps = 0;
+	while(!IsAllSet && Steps < StepOnce)
 	{
 		int32 index = FMath::RandRange(0, OutputTilesMaybe[NextR][NextC].Num() - 1);
 		if (OutputTilesMaybe[NextR][NextC].IsValidIndex(index))
@@ -128,8 +130,8 @@ void UWFCOverlapAsset::FillOutput()
 		}
 		OutputTilesMaybe[NextR][NextC].Empty();
 		OnAnalyseStep();
+		Steps++;
 	}
-	
 
 	for (int32 y = 0; y < OutputRow; y++)
 	{
@@ -140,6 +142,22 @@ void UWFCOverlapAsset::FillOutput()
 			if (OutputTileIndex[y][x] != -1)
 			{
 				Tile = AllOverlapTiles[OutputTileIndex[y][x]];
+			}
+			else if (OutputTilesMaybe[y][x].Num()>0)
+			{
+				int R = 0, G = 0, B = 0, A = 0;
+				for (int32 k =0; k< OutputTilesMaybe[y][x].Num(); k++)
+				{
+					R += AllOverlapTiles[OutputTilesMaybe[y][x][k]].Data[0][0].R;
+					G += AllOverlapTiles[OutputTilesMaybe[y][x][k]].Data[0][0].G;
+					B += AllOverlapTiles[OutputTilesMaybe[y][x][k]].Data[0][0].B;
+					A += AllOverlapTiles[OutputTilesMaybe[y][x][k]].Data[0][0].A;
+				}
+				Tile.Data[0][0].R = R / OutputTilesMaybe[y][x].Num();
+				Tile.Data[0][0].G = G / OutputTilesMaybe[y][x].Num();
+				Tile.Data[0][0].B = B / OutputTilesMaybe[y][x].Num();
+				Tile.Data[0][0].A = A / OutputTilesMaybe[y][x].Num();
+
 			}
 			else
 			{
@@ -254,7 +272,7 @@ void UWFCOverlapAsset::ReadFromTexture()
 	{
 		for (int32 Y = 0; Y < InputImage->PlatformData->SizeY; Y++)
 		{
-			FColor PixelColor = FormatedImageData[Y * InputImage->PlatformData->SizeX + X];
+			FColor PixelColor = FormatedImageData[X * InputImage->PlatformData->SizeX + Y];
 			//×öÈô¸É²Ù×÷
 			PixelInput.Add(FPixelInfo(PixelColor.R, PixelColor.G, PixelColor.B, PixelColor.A));
 		}

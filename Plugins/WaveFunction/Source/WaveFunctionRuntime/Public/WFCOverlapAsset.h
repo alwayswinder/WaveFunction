@@ -30,6 +30,8 @@ public:
 	int32 OutputRow = 128;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WFCOutput")
 	int32 OutputColumn = 128;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WFCOutput")
+	int32 StepOnce = 10;
 	UPROPERTY()
 	TArray<FPixelInfo> PixelsOutput;
 	UPROPERTY()

@@ -226,7 +226,7 @@ TSharedRef<SDockTab> FWFCOverlapAssetToolkit::SpawnTab_Output(const FSpawnTabArg
 void FWFCOverlapAssetToolkit::Analyse()
 {
 	WFCAsset->Analyse();
-	//FillButton->SetVisibility(EVisibility::Visible);
+	FillButton->SetVisibility(EVisibility::Visible);
 }
 
 void FWFCOverlapAssetToolkit::ClearOutput()
