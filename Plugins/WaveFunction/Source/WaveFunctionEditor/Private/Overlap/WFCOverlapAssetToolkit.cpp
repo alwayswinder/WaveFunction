@@ -61,6 +61,15 @@ void FWFCOverlapAssetToolkit::RegisterTabSpawners(const TSharedRef<FTabManager>&
 		.SetGroup(WorkspaceMenuCategoryRef)
 		.SetIcon(FSlateIcon(FEditorStyle::GetStyleSetName(), "LevelEditor.Tabs.Details"));
 
+	InTabManager->RegisterTabSpawner(FWFCOverlapAssetToolkitTabs::TilesTabID, FOnSpawnTab::CreateSP(this, &FWFCOverlapAssetToolkit::SpawnTab_Tiles))
+		.SetDisplayName(LOCTEXT("OverlapTilesTab", "OverlapTiles"))
+		.SetGroup(WorkspaceMenuCategoryRef)
+		.SetIcon(FSlateIcon(FEditorStyle::GetStyleSetName(), "LevelEditor.Tabs.Details"));
+
+	InTabManager->RegisterTabSpawner(FWFCOverlapAssetToolkitTabs::NeighborsTabID, FOnSpawnTab::CreateSP(this, &FWFCOverlapAssetToolkit::SpawnTab_Neighbors))
+		.SetDisplayName(LOCTEXT("OverlapNeighborsTab", "OverlapNeighbors"))
+		.SetGroup(WorkspaceMenuCategoryRef)
+		.SetIcon(FSlateIcon(FEditorStyle::GetStyleSetName(), "LevelEditor.Tabs.Details"));
 	InTabManager->RegisterTabSpawner(FWFCOverlapAssetToolkitTabs::OutputTabID, FOnSpawnTab::CreateSP(this, &FWFCOverlapAssetToolkit::SpawnTab_Output))
 		.SetDisplayName(LOCTEXT("OverlapOutputTab", "OverlapOutput"))
 		.SetGroup(WorkspaceMenuCategoryRef)
@@ -142,9 +151,19 @@ void FWFCOverlapAssetToolkit::Initialize(class UWFCOverlapAsset* InNewAsset, con
 				)
 				->Split
 				(
+					/*left*/
+					FTabManager::NewStack()
+					->SetSizeCoefficient(0.2f)
+					->SetHideTabWell(true)
+					->AddTab(FWFCOverlapAssetToolkitTabs::TilesTabID, ETabState::OpenedTab)
+					->AddTab(FWFCOverlapAssetToolkitTabs::NeighborsTabID, ETabState::OpenedTab)
+					->SetForegroundTab(FWFCOverlapAssetToolkitTabs::TilesTabID)
+				)
+				->Split
+				(
 					/*right*/
 					FTabManager::NewStack()
-					->SetSizeCoefficient(0.8f)
+					->SetSizeCoefficient(0.6f)
 					->SetHideTabWell(true)
 					->AddTab(FWFCOverlapAssetToolkitTabs::OutputTabID, ETabState::OpenedTab)
 				)
@@ -165,6 +184,26 @@ TSharedRef<SDockTab> FWFCOverlapAssetToolkit::SpawnTab_Input(const FSpawnTabArgs
 		.Label(LOCTEXT("DetailsTab_Title", "Details"))
 		[
 			SNew(SWFCOverlapPropertiesTabBody, WFCEditorPtr)
+		];
+}
+
+TSharedRef<SDockTab> FWFCOverlapAssetToolkit::SpawnTab_Tiles(const FSpawnTabArgs& Args)
+{
+	return SNew(SDockTab)
+		.Icon(FEditorStyle::GetBrush("LevelEditor.Tabs.Details"))
+		.Label(LOCTEXT("Tab_Tiles", "Tiles"))
+		[
+			SAssignNew(TilesSSC, SScrollBox)
+		];
+}
+
+TSharedRef<SDockTab> FWFCOverlapAssetToolkit::SpawnTab_Neighbors(const FSpawnTabArgs& Args)
+{
+	return SNew(SDockTab)
+		.Icon(FEditorStyle::GetBrush("LevelEditor.Tabs.Details"))
+		.Label(LOCTEXT("Tab_Neighbors", "Neighbors"))
+		[
+			SAssignNew(NeighborsSSC, SScrollBox)
 		];
 }
 
@@ -227,6 +266,8 @@ void FWFCOverlapAssetToolkit::Analyse()
 {
 	WFCAsset->Analyse();
 	FillButton->SetVisibility(EVisibility::Visible);
+
+	FillTilesAndNeighborsTab();
 }
 
 void FWFCOverlapAssetToolkit::ClearOutput()
@@ -291,6 +332,29 @@ void FWFCOverlapAssetToolkit::RefreshOutputTab()
 
 
 
+void FWFCOverlapAssetToolkit::FillTilesAndNeighborsTab()
+{
+	TilesSSC->ClearChildren();
+	if (WFCAsset->AllOverlapTiles.Num())
+	{
+		for (int i=0; i<WFCAsset->AllOverlapTiles.Num(); i++)
+		{
+			TilesSSC->AddSlot()
+				.HAlign(HAlign_Left)
+				[
+					SNew(SMyOutputOverlapTile)
+					.TileIndex(i)
+					.WFCAsset(WFCAsset)
+				];
+			TilesSSC->AddSlot()
+				.HAlign(HAlign_Fill)
+				[
+					SNew(SBorder)
+				];
+		}
+	}
+}
+
 void SMyOutputOverlapItem::Construct(const FArguments& InArgs)
 {
 	WFCAsset = InArgs._WFCAsset.Get();
@@ -323,4 +387,63 @@ FText SMyOutputOverlapItem::GetNumofResult() const
 	return FText::FromString(FString::FromInt(num));
 }
 
+
+
+void SMyOutputOverlapTile::Construct(const FArguments& InArgs)
+{
+	WFCAsset = InArgs._WFCAsset.Get();
+	TileIndex = InArgs._TileIndex.Get();
+
+	TSharedPtr<SVerticalBox> TilesVbx = SNew(SVerticalBox);
+
+	FButtonStyle* MyButtonStyle = new FButtonStyle();
+	const FButtonStyle& NoramStyle = FCoreStyle::Get().GetWidgetStyle< FButtonStyle >("Button");
+
+	MyButtonStyle->SetNormal(NoramStyle.Normal);
+	MyButtonStyle->SetHovered(NoramStyle.Hovered);
+	MyButtonStyle->SetPressed(NoramStyle.Pressed);
+	MyButtonStyle->SetDisabled(NoramStyle.Disabled);
+	MyButtonStyle->SetNormalPadding(FMargin(0));
+	MyButtonStyle->SetPressedPadding(FMargin(0));
+
+	MyButtonStyle->Normal.ImageSize = FVector2D(24, 24);
+
+
+	for (int c=0; c <WFCAsset->AnalyseSize; c++)
+	{
+		TSharedPtr<SHorizontalBox> TilesHbxTmp = SNew(SHorizontalBox);
+		for (int r=0; r<WFCAsset->AnalyseSize; r++)
+		{
+			FColor tmp;
+			tmp.R = WFCAsset->AllOverlapTiles[TileIndex].Data[c][r].R;
+			tmp.G = WFCAsset->AllOverlapTiles[TileIndex].Data[c][r].G;
+			tmp.B = WFCAsset->AllOverlapTiles[TileIndex].Data[c][r].B;
+			tmp.A = WFCAsset->AllOverlapTiles[TileIndex].Data[c][r].A;
+
+			TilesHbxTmp->AddSlot()
+				.Padding(0)
+				[
+					SNew(SBorder)
+					.VAlign(VAlign_Fill)
+					.HAlign(HAlign_Fill)
+					.ColorAndOpacity(tmp)
+					.Padding(0)
+					[
+						SNew(SButton)
+						.ButtonStyle(MyButtonStyle)
+					]
+				];
+		}
+		TilesVbx->AddSlot()
+			.Padding(0)
+			[
+				TilesHbxTmp.ToSharedRef()
+			];
+	}
+	ChildSlot
+		[
+			TilesVbx.ToSharedRef()
+		];
+
+}
 #undef LOCTEXT_NAMESPACE

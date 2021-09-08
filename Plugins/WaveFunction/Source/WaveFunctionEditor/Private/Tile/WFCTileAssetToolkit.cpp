@@ -496,7 +496,7 @@ void FWFCAssetToolkit::TilsSettingGenerate()
 					[
 						SNew(SMyTilesSettingItem)
 						.WFCAsset(WFCAsset)
-					.BrushIndex(i)
+						.BrushIndex(i)
 					];
 			}
 		}

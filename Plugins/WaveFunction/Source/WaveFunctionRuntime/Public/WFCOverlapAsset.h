@@ -56,9 +56,11 @@ public:
 	void WriteToTexture();
 	void ReadFromTexture();
 	void OnAnalyseStep();
-
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WFCOutput")
 	TArray<FOverlapTileInfo> AllOverlapTiles;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WFCOutput")
 	TArray<FOverlapNeighborInfo> AllNeighborsLR;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WFCOutput")
 	TArray<FOverlapNeighborInfo> AllNeighborsUd;
 
 	/**/

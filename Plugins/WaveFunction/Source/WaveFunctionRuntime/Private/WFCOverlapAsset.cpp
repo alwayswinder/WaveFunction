@@ -42,10 +42,10 @@ void UWFCOverlapAsset::Analyse()
 
 	int32 Row = InputImage->PlatformData->SizeX;
 	int32 Column = InputImage->PlatformData->SizeY;
-	for (int32 X = 0; X < Row; X++)
+	for (int32 Y = 0; Y < Column; Y++)
 	{
 		TArray<FPixelInfo> TmpPixel;
-		for (int32 Y = 0; Y < Column; Y++)
+		for (int32 X = 0; X < Row; X++)
 		{
 			TmpPixel.Add(PixelInput[Y * Row + X]);
 		}
@@ -55,9 +55,9 @@ void UWFCOverlapAsset::Analyse()
 	AllNeighborsLR.Empty();
 	AllNeighborsUd.Empty();
 
-	for (int r = 0; r<Row; r++)
+	for (int c = 0; c<Column; c++)
 	{
-		for (int c = 0; c< Column; c++)
+		for (int r = 0; r< Row; r++)
 		{
 			FOverlapTileInfo PixelHere = FindTileFormArray(r, c,Row, Column, PixelRC);
 			FOverlapTileInfo PixelNext = FindTileFormArray(r+1, c, Row, Column, PixelRC);
@@ -130,12 +130,13 @@ void UWFCOverlapAsset::Analyse()
 	for (int i=0; i<AllOverlapTiles.Num(); i++)
 	{
 		AllIndexMaybe.Add(i);
+		AllOverlapTiles[i].TileTimesRes /= 3;
 	}
-	for (int r=0; r<OutputRow; r++)
+	for (int c=0; c<OutputColumn; c++)
 	{
 		TArray<int32> Tmp;
 		TArray<TArray<int32>> TmpMaybe;
-		for (int c=0; c<OutputColumn; c++)
+		for (int r=0; r<OutputRow; r++)
 		{
 			Tmp.Add(-1);
 			TmpMaybe.Add(AllIndexMaybe);
@@ -144,10 +145,10 @@ void UWFCOverlapAsset::Analyse()
 		OutputTilesMaybe.Add(TmpMaybe);
 	}
 
-	OutputTileIndex[0][0] = FMath::RandRange(0, AllOverlapTiles.Num() - 1);
-	OutputTilesMaybe[0][0].Empty();
-	NextR = 0;
-	NextC = 0;
+	OutputTileIndex[OutputColumn/2][OutputRow/2] = FMath::RandRange(0, AllOverlapTiles.Num() - 1);
+	OutputTilesMaybe[OutputColumn/2][OutputRow/2].Empty();
+	NextR = OutputRow/2;
+	NextC = OutputColumn/2;
 	OnAnalyseStep();
 
 	FillOutput();
@@ -155,9 +156,9 @@ void UWFCOverlapAsset::Analyse()
 
 void UWFCOverlapAsset::ClearOutput()
 {
-	for (int32 y = 0; y < OutputRow; y++)
+	for (int32 y = 0; y < OutputColumn; y++)
 	{
-		for (int32 x = 0; x < OutputColumn; x++)
+		for (int32 x = 0; x < OutputRow; x++)
 		{
 			int32 curPixelIndex = ((y * OutputRow) + x);
 			PixelsOutput[curPixelIndex].R = 255;
@@ -174,37 +175,43 @@ void UWFCOverlapAsset::FillOutput()
 	int Steps = 0;
 	while(!IsAllSet && Steps < StepOnce)
 	{
-		//int index = 0;
-		int32 index = FMath::RandRange(0, OutputTilesMaybe[NextR][NextC].Num() - 1);
-		/*if (OutputTilesMaybe[NextR][NextC].Num() > 0)
+		int index = 0;
+		//int32 index = FMath::RandRange(0, OutputTilesMaybe[NextR][NextC].Num() - 1);
+		if (OutputTilesMaybe[NextC][NextR].Num() > 0)
 		{
-			int MinNum = OutputRow * OutputColumn + 1;
-			for (int k=0; k< OutputTilesMaybe[NextR][NextC].Num(); k++)
+			float MinNum = 1.0f * OutputRow * OutputColumn + 1;
+			for (int k=0; k< OutputTilesMaybe[NextC][NextR].Num(); k++)
 			{
-				int tmpindex = OutputTilesMaybe[NextR][NextC][k];
-				float sizeRes = 1.0f * InputImage->PlatformData->SizeX * InputImage->PlatformData->SizeY;
+				int tmpindex = OutputTilesMaybe[NextC][NextR][k];
 
-				int subNum = (AllOverlapTiles[tmpindex].TileTimesFill/(OutputRow*OutputColumn*1.0f)) / (AllOverlapTiles[tmpindex].TileTimesRes/sizeRes);
+				float TimesNow = 1.0f * AllOverlapTiles[tmpindex].TileTimesFill;
+				float TimesShould = 1.0f * AllOverlapTiles[tmpindex].TileTimesRes/ 
+					(1.0f * InputImage->PlatformData->SizeX * InputImage->PlatformData->SizeY)*
+					(1.0f * OutputRow * OutputColumn);
+
+				float subNum = TimesNow / TimesShould;
+				UE_LOG(LogTemp, Warning, TEXT("sub=%f"), subNum);
 				if (subNum < MinNum)
 				{
 					MinNum = subNum;
 					index = k;
+					UE_LOG(LogTemp, Warning, TEXT("Min=%f"), MinNum);
 				}
 			}
-		}*/
-		if (OutputTilesMaybe[NextR][NextC].IsValidIndex(index))
-		{
-			OutputTileIndex[NextR][NextC] = OutputTilesMaybe[NextR][NextC][index];
-			AllOverlapTiles[OutputTileIndex[NextR][NextC]].TileTimesFill += 1;
 		}
-		OutputTilesMaybe[NextR][NextC].Empty();
+		if (OutputTilesMaybe[NextC][NextR].IsValidIndex(index))
+		{
+			OutputTileIndex[NextC][NextR] = OutputTilesMaybe[NextC][NextR][index];
+			AllOverlapTiles[OutputTileIndex[NextC][NextR]].TileTimesFill += 1;
+		}
+		OutputTilesMaybe[NextC][NextR].Empty();
 		OnAnalyseStep();
 		Steps++;
 	}
 
-	for (int32 y = 0; y < OutputRow; y++)
+	for (int32 y = 0; y < OutputColumn; y++)
 	{
-		for (int32 x = 0; x < OutputColumn; x++)
+		for (int32 x = 0; x < OutputRow; x++)
 		{
 			int32 curPixelIndex = ((y * OutputRow) + x);
 			FOverlapTileInfo Tile(AnalyseSize);
@@ -246,10 +253,10 @@ void UWFCOverlapAsset::FillOutput()
 void UWFCOverlapAsset::InitCreated()
 {
 	PixelsOutput.Empty();
-	for (int32 y = 0; y < OutputRow; y++)
+	for (int32 y = 0; y < OutputColumn; y++)
 	{
-		for (int32 x = 0; x < OutputColumn; x++)
-		{
+		for (int32 x = 0; x < OutputRow; x++)
+		{	
 			int32 curPixelIndex = ((y * OutputRow) + x);
 
 			PixelsOutput.Add(FPixelInfo(255, 255, 255, 255));
@@ -261,6 +268,7 @@ void UWFCOverlapAsset::InitCreated()
 	OutputTexture->PlatformData = new FTexturePlatformData();
 	OutputTexture->PlatformData->SizeX = OutputRow;
 	OutputTexture->PlatformData->SizeY = OutputColumn;
+	OutputTexture->Filter = TextureFilter::TF_Nearest;
 	//设置像素格式
 	OutputTexture->PlatformData->PixelFormat = EPixelFormat::PF_B8G8R8A8;
 	OutputTexture->NeverStream = true;
@@ -282,9 +290,9 @@ void UWFCOverlapAsset::WriteToTexture()
 	}
 
 	uint8* Pixels = new uint8[OutputRow * OutputColumn * 4];
-	for (int32 y = 0; y < OutputRow; y++)
+	for (int32 y = 0; y < OutputColumn; y++)
 	{
-		for (int32 x = 0; x < OutputColumn; x++)
+		for (int32 x = 0; x < OutputRow; x++)
 		{
 			int32 curPixelIndex = ((y * OutputRow) + x);
 			//这里可以设置4个通道的值
@@ -337,11 +345,11 @@ void UWFCOverlapAsset::ReadFromTexture()
 
 	const FColor* FormatedImageData = static_cast<const FColor*>(InputImage->PlatformData->Mips[0].BulkData.LockReadOnly());
 
-	for (int32 X = 0; X < InputImage->PlatformData->SizeX; X++)
+	for (int32 Y = 0; Y < InputImage->PlatformData->SizeY; Y++)
 	{
-		for (int32 Y = 0; Y < InputImage->PlatformData->SizeY; Y++)
+		for (int32 X = 0; X < InputImage->PlatformData->SizeX; X++)
 		{
-			FColor PixelColor = FormatedImageData[X * InputImage->PlatformData->SizeX + Y];
+			FColor PixelColor = FormatedImageData[Y * InputImage->PlatformData->SizeX + X];
 			//做若干操作
 			PixelInput.Add(FPixelInfo(PixelColor.R, PixelColor.G, PixelColor.B, PixelColor.A));
 		}
@@ -359,10 +367,10 @@ void UWFCOverlapAsset::OnAnalyseStep()
 {
 	int32 r = NextR;
 	int32 c = NextC;
-	int indexlast = OutputTileIndex[r][c];
+	int indexlast = OutputTileIndex[c][r];
 	//Up
-	if (OutputTilesMaybe.IsValidIndex(r - 1) && OutputTilesMaybe[r - 1].IsValidIndex(c)
-		&& OutputTilesMaybe[r - 1][c].Num() > 0)
+	if (OutputTilesMaybe.IsValidIndex(c - 1) && OutputTilesMaybe[c - 1].IsValidIndex(r)
+		&& OutputTilesMaybe[c - 1][r].Num() > 0)
 	{
 		TArray<int32> Neighbors;
 		for (auto Tile : AllNeighborsUd)
@@ -371,9 +379,9 @@ void UWFCOverlapAsset::OnAnalyseStep()
 			{
 				int32 UpTile = Tile.Left;
 				bool IsFind = false;
-				for (int i = 0; i < OutputTilesMaybe[r - 1][c].Num(); i++)
+				for (int i = 0; i < OutputTilesMaybe[c - 1][r].Num(); i++)
 				{
-					if (UpTile == OutputTilesMaybe[r - 1][c][i])
+					if (UpTile == OutputTilesMaybe[c - 1][r][i])
 					{
 						IsFind = true;
 						break;
@@ -385,11 +393,11 @@ void UWFCOverlapAsset::OnAnalyseStep()
 				}
 			}
 		}
-		OutputTilesMaybe[r - 1][c] = Neighbors;
+		OutputTilesMaybe[c - 1][r] = Neighbors;
 	}
 	//Down
-	if (OutputTilesMaybe.IsValidIndex(r + 1) && OutputTilesMaybe[r + 1].IsValidIndex(c)
-		&& OutputTilesMaybe[r + 1][c].Num() > 0)
+	if (OutputTilesMaybe.IsValidIndex(c + 1) && OutputTilesMaybe[c + 1].IsValidIndex(r)
+		&& OutputTilesMaybe[c + 1][r].Num() > 0)
 	{
 		TArray<int32> Neighbors;
 		for (auto Tile : AllNeighborsUd)
@@ -398,9 +406,9 @@ void UWFCOverlapAsset::OnAnalyseStep()
 			{
 				int32 DownTile = Tile.Right;
 				bool IsFind = false;
-				for (int i = 0; i < OutputTilesMaybe[r + 1][c].Num(); i++)
+				for (int i = 0; i < OutputTilesMaybe[c + 1][r].Num(); i++)
 				{
-					if (DownTile == OutputTilesMaybe[r + 1][c][i])
+					if (DownTile == OutputTilesMaybe[c + 1][r][i])
 					{
 						IsFind = true;
 						break;
@@ -412,11 +420,11 @@ void UWFCOverlapAsset::OnAnalyseStep()
 				}
 			}
 		}
-		OutputTilesMaybe[r + 1][c] = Neighbors;
+		OutputTilesMaybe[c + 1][r] = Neighbors;
 	}
 	//Left
-	if (OutputTilesMaybe.IsValidIndex(r) && OutputTilesMaybe[r].IsValidIndex(c - 1)
-		&& OutputTilesMaybe[r][c - 1].Num() > 0)
+	if (OutputTilesMaybe.IsValidIndex(c) && OutputTilesMaybe[c].IsValidIndex(r - 1)
+		&& OutputTilesMaybe[c][r - 1].Num() > 0)
 	{
 		TArray<int32> Neighbors;
 		for (auto Tile : AllNeighborsLR)
@@ -425,9 +433,9 @@ void UWFCOverlapAsset::OnAnalyseStep()
 			{
 				int32 LeftTile = Tile.Left;
 				bool IsFind = false;
-				for (int i = 0; i < OutputTilesMaybe[r][c - 1].Num(); i++)
+				for (int i = 0; i < OutputTilesMaybe[c][r - 1].Num(); i++)
 				{
-					if (LeftTile == OutputTilesMaybe[r][c - 1][i])
+					if (LeftTile == OutputTilesMaybe[c][r - 1][i])
 					{
 						IsFind = true;
 						break;
@@ -439,11 +447,11 @@ void UWFCOverlapAsset::OnAnalyseStep()
 				}
 			}
 		}
-		OutputTilesMaybe[r][c - 1] = Neighbors;
+		OutputTilesMaybe[c][r - 1] = Neighbors;
 	}
 	//Right
-	if (OutputTilesMaybe.IsValidIndex(r) && OutputTilesMaybe[r].IsValidIndex(c + 1)
-		&& OutputTilesMaybe[r][c + 1].Num() > 0)
+	if (OutputTilesMaybe.IsValidIndex(c) && OutputTilesMaybe[c].IsValidIndex(r + 1)
+		&& OutputTilesMaybe[c][r + 1].Num() > 0)
 	{
 		TArray<int32> Neighbors;
 		for (auto Tile : AllNeighborsLR)
@@ -452,9 +460,9 @@ void UWFCOverlapAsset::OnAnalyseStep()
 			{
 				int32 RightTile = Tile.Right;
 				bool IsFind = false;
-				for (int i = 0; i < OutputTilesMaybe[r][c + 1].Num(); i++)
+				for (int i = 0; i < OutputTilesMaybe[c][r + 1].Num(); i++)
 				{
-					if (RightTile == OutputTilesMaybe[r][c + 1][i])
+					if (RightTile == OutputTilesMaybe[c][r + 1][i])
 					{
 						IsFind = true;
 						break;
@@ -466,22 +474,22 @@ void UWFCOverlapAsset::OnAnalyseStep()
 				}
 			}
 		}
-		OutputTilesMaybe[r][c + 1] = Neighbors;
+		OutputTilesMaybe[c][r + 1] = Neighbors;
 	}
 
 	int MinMaybeNum = AllOverlapTiles.Num() + 1;
 	IsAllSet = true;
-	for (int32 R =0; R < OutputRow; R++)
+	for (int32 C =0; C < OutputColumn; C++)
 	{
-		for (int32 C =0; C < OutputColumn; C++)
+		for (int32 R =0; R < OutputRow; R++)
 		{
-			if (OutputTilesMaybe[R][C].Num() > 0 && OutputTilesMaybe[R][C].Num() < MinMaybeNum)
+			if (OutputTilesMaybe[C][R].Num() > 0 && OutputTilesMaybe[C][R].Num() < MinMaybeNum)
 			{
-				MinMaybeNum = OutputTilesMaybe[R][C].Num();
+				MinMaybeNum = OutputTilesMaybe[C][R].Num();
 				NextR = R;
 				NextC = C;
 			}
-			if (OutputTilesMaybe[R][C].Num() > 0)
+			if (OutputTilesMaybe[C][R].Num() > 0)
 			{
 				IsAllSet = false;
 			}
@@ -496,7 +504,7 @@ FOverlapTileInfo UWFCOverlapAsset::FindTileFormArray(int r, int c,int rMax, int 
 	{
 		for (int j=0; j< AnalyseSize; j++)
 		{
-			OverlapTile.Data[i][j] = PixelArray[(r + i)%rMax][(c + j)%cMax];
+			OverlapTile.Data[i][j] = PixelArray[(c + i)%cMax][(r + j)%rMax];
 		}
 	}
 	return OverlapTile;
