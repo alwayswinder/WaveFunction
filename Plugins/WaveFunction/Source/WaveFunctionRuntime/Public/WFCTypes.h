@@ -130,7 +130,7 @@ struct WAVEFUNCTIONRUNTIME_API FOverlapTileInfo
 		}
 		return RetTile;
 	}
-	static FOverlapTileInfo Reflect(FOverlapTileInfo InTile)
+	static FOverlapTileInfo ReflectX(FOverlapTileInfo InTile)
 	{
 		FOverlapTileInfo RetTile(InTile.TileSize);
 		int32 size = InTile.TileSize;
@@ -140,6 +140,20 @@ struct WAVEFUNCTIONRUNTIME_API FOverlapTileInfo
 			for (int c = 0; c < size; c++)
 			{
 				RetTile.Data[r][c] = InTile.Data[r][size - c - 1];
+			}
+		}
+		return RetTile;
+	}
+	static FOverlapTileInfo ReflectY(FOverlapTileInfo InTile)
+	{
+		FOverlapTileInfo RetTile(InTile.TileSize);
+		int32 size = InTile.TileSize;
+
+		for (int r = 0; r < size; r++)
+		{
+			for (int c = 0; c < size; c++)
+			{
+				RetTile.Data[r][c] = InTile.Data[size - r - 1][c];
 			}
 		}
 		return RetTile;

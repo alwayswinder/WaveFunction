@@ -55,7 +55,7 @@ public:
 public:
 	void WriteToTexture();
 	void ReadFromTexture();
-	void OnAnalyseStep();
+	void OnAnalyseStep(int R, int C);
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WFCOutput")
 	TArray<FOverlapTileInfo> AllOverlapTiles;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WFCOutput")
@@ -67,10 +67,7 @@ public:
 	TArray<TArray<FPixelInfo>> PixelRC;
 	TArray<TArray<int32>> OutputTileIndex;
 	TArray<TArray<TArray<int32>>> OutputTilesMaybe;
-	int32 NextR = 0;
-	int32 NextC = 0;
 
-	bool IsAllSet;
 	/**/
 	FOverlapTileInfo FindTileFormArray(int r, int c,int rMax, int cMax, TArray<TArray<FPixelInfo>>& PixelArray);
 	int32 CheckAndAddTileInAll(FOverlapTileInfo NewTile);
