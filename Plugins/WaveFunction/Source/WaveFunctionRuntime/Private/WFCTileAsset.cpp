@@ -1,4 +1,6 @@
 #include "WFCTileAsset.h"
+#include "FileHelpers.h"
+
 
 UWFCTileAsset::UWFCTileAsset()
 {
@@ -351,6 +353,78 @@ void UWFCTileAsset::OnOutputFill()
 	{
 		OnOutputGenerate();
 	}
+}
+
+void UWFCTileAsset::SaveRoadInfo()
+{
+	FString AssetPath = this->GetPathName();
+	UE_LOG(LogTemp, Warning, TEXT("path = %s"), &AssetPath);
+
+	UTexture2D* RoadInfoTexture;
+	RoadInfoTexture = NewObject<UTexture2D>(this);
+
+	RoadInfoTexture->PlatformData = new FTexturePlatformData();
+	RoadInfoTexture->PlatformData->SizeX = 1024;
+	RoadInfoTexture->PlatformData->SizeY = 1024;
+	RoadInfoTexture->Filter = TextureFilter::TF_Nearest;
+	RoadInfoTexture->MipGenSettings = TMGS_NoMipmaps;
+
+
+	int32 TextureX = RoadInfoTexture->PlatformData->SizeX;
+	int32 TextureY = RoadInfoTexture->PlatformData->SizeY;
+	FLinearColor InColor = FLinearColor(1.0, 0.0, 0.0, 1.0);
+	RoadInfoTexture->PlatformData->PixelFormat = EPixelFormat::PF_B8G8R8A8;
+
+	TextureCompressionSettings OldCompressionSettings = RoadInfoTexture->CompressionSettings;
+	TextureMipGenSettings OldMipGenSettings = RoadInfoTexture->MipGenSettings;
+	bool OldSRGB = RoadInfoTexture->SRGB;
+
+	RoadInfoTexture->CompressionSettings = TextureCompressionSettings::TC_VectorDisplacementmap;
+	RoadInfoTexture->MipGenSettings = TextureMipGenSettings::TMGS_NoMipmaps;
+	RoadInfoTexture->SRGB = false;
+	RoadInfoTexture->UpdateResource();
+
+	uint8* Pixels = new uint8[TextureX * TextureY * 4];
+	for (int32 y = 0; y < TextureY; y++)
+	{
+		for (int32 x = 0; x < TextureX; x++)
+		{
+			int32 curPixelIndex = ((y * TextureX) + x);
+			//这里可以设置4个通道的值
+			//这里需要考虑像素格式，之前设置了PF_B8G8R8A8，那么这里通道的顺序就是BGRA
+			Pixels[4 * curPixelIndex] = InColor.R;
+			Pixels[4 * curPixelIndex + 1] = InColor.G;
+			Pixels[4 * curPixelIndex + 2] = InColor.B;
+			Pixels[4 * curPixelIndex + 3] = InColor.A;
+		}
+	}
+	//创建第一个MipMap
+	FTexture2DMipMap* Mip = new FTexture2DMipMap();
+	RoadInfoTexture->PlatformData->Mips.Add(Mip);
+	Mip->SizeX = TextureX;
+	Mip->SizeY = TextureY;
+
+	//锁定Texture让它可以被修改
+	Mip->BulkData.Lock(LOCK_READ_WRITE);
+	uint8* TextureData = (uint8*)Mip->BulkData.Realloc(TextureX * TextureY * 4);
+	FMemory::Memcpy(TextureData, Pixels, sizeof(uint8) * TextureX * TextureY * 4);
+	Mip->BulkData.Unlock();
+
+	//通过以上步骤，我们完成数据的临时写入
+	//执行完以下这两个步骤，编辑器中的asset会显示可以保存的状态（如果是指定Asset来获取UTexture2D的指针的情况下）
+	RoadInfoTexture->Source.Init(TextureX, TextureY, 1, 1, ETextureSourceFormat::TSF_BGRA8, Pixels);
+
+	RoadInfoTexture->CompressionSettings = OldCompressionSettings;
+	RoadInfoTexture->MipGenSettings = OldMipGenSettings;
+	RoadInfoTexture->SRGB = OldSRGB;
+	RoadInfoTexture->UpdateResource();
+
+	RoadInfoTexture->GetPackage()->MarkPackageDirty();
+	TArray<UPackage*> Packages;
+	Packages.Add(RoadInfoTexture->GetPackage());
+	UEditorLoadingAndSavingUtils::SavePackages(Packages, false);
+
+	delete[] Pixels;
 }
 
 int32 UWFCTileAsset::GetTilesNum()
@@ -741,6 +815,10 @@ void UWFCTileAsset::PostEditChangeProperty(FPropertyChangedEvent& PropertyChange
 			|| PropertyChangedEvent.Property->GetFName() == GET_MEMBER_NAME_CHECKED(UWFCTileAsset, OutputColumns))
 		{
 			ReFillOutputIndexList();
+		}
+		if (PropertyChangedEvent.Property->GetFName() == GET_MEMBER_NAME_CHECKED(UWFCTileAsset, Symmetrys))
+		{
+			PropertyChangeInput.Broadcast();
 		}
 	}
 }

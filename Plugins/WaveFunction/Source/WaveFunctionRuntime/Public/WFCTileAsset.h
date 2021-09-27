@@ -41,7 +41,7 @@ public:
 	void OnOutputAnalysis(int r, int c);
 	void OnOutputGenerate();
 	void OnOutputFill();
-
+	void SaveRoadInfo();
 
 	int32 GetTilesNum();
 	int32 GetSymmetrysNum();

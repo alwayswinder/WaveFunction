@@ -331,6 +331,14 @@ TSharedRef<SDockTab> FWFCAssetToolkit::SpawnTab_Output(const FSpawnTabArgs& Args
 					.Text(FText::FromString("Fill"))
 					.OnPressed(this, &FWFCAssetToolkit::OutputFill)
 				]
+				+ SHorizontalBox::Slot()
+				.AutoWidth()
+				.VAlign(VAlign_Center)
+				[
+					SNew(SButton)
+					.Text(FText::FromString("SaveRoadInfo"))
+					.OnPressed(this, &FWFCAssetToolkit::SaveRoadInfo)
+				]
 			]
 			+SVerticalBox::Slot()
 			.FillHeight(1.0)
@@ -386,6 +394,11 @@ void FWFCAssetToolkit::OutputGenerate()
 void FWFCAssetToolkit::OutputFill()
 {
 	WFCAsset->OnOutputFill();
+}
+
+void FWFCAssetToolkit::SaveRoadInfo()
+{
+	WFCAsset->SaveRoadInfo();
 }
 
 FText FWFCAssetToolkit::GetBrushStateText() const 

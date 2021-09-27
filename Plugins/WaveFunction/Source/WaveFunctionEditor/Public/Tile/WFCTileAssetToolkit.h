@@ -122,6 +122,8 @@ protected:
 	void ClearOutput();
 	void OutputGenerate();
 	void OutputFill();
+	void SaveRoadInfo();
+
 	FText GetBrushStateText()const;
 
 

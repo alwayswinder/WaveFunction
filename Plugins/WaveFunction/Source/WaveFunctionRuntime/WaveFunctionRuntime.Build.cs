@@ -41,6 +41,7 @@ public class WaveFunctionRuntime : ModuleRules
 				// ... add private dependencies that you statically link with here ...	
 				"UMG",
 				"AssetRegistry",
+				"UnrealEd",
 			}
             );
 		
