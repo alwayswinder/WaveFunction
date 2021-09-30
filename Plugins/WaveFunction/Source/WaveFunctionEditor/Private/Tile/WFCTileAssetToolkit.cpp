@@ -8,6 +8,7 @@
 #include "Widgets\Layout\SScrollBox.h"
 #include "WFCInputProcessor.h"
 #include "Widgets\Text\SInlineEditableTextBlock.h"
+#include "..\..\Public\Tile\WFCTileAssetToolkit.h"
 
 #define LOCTEXT_NAMESPACE "WFCEditor"
 
@@ -764,6 +765,13 @@ void SMyTilesSettingItem::Construct(const FArguments& InArgs)
 				.Image(WFCAsset->GetBrushInputByIndex(BrushIndex))
 			]
 			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			.Padding(2)
+			[
+				SNew(SImage)
+				.Image(WFCAsset->GetBrushInputMaskByIndex(BrushIndex))
+			]
+			+ SHorizontalBox::Slot()
 			.VAlign(VAlign_Center)
 			.Padding(2)
 			[
@@ -784,6 +792,14 @@ void SMyTilesSettingItem::Construct(const FArguments& InArgs)
 				SNew(SInlineEditableTextBlock)
 				.OnTextCommitted(this, &SMyTilesSettingItem::OnTextCommit)
 				.Text(this, &SMyTilesSettingItem::GetFrequencyText)
+			]
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			.Padding(2)
+			[
+				SNew(SCheckBox)
+				.IsChecked(this, &SMyTilesSettingItem::IsSelected)
+				.OnCheckStateChanged(this, &SMyTilesSettingItem::OnSaveAsTextureSelectedChange)
 			]
 			
 		];
@@ -826,6 +842,23 @@ FText SMyTilesSettingItem::GetSelectedComboBoxDetailFilterTextLabel() const
 	return FText::FromString(*ComboBoxFilterOptions[SelectionIndex]);
 }
 
+void SMyTilesSettingItem::OnSaveAsTextureSelectedChange(ECheckBoxState NewState)
+{
+	if (NewState == ECheckBoxState::Checked)
+	{
+		WFCAsset->SaveAsTexture[BrushIndex] = true;
+	}
+	else
+	{
+		WFCAsset->SaveAsTexture[BrushIndex] = false;
+	}
+}
+
+
+ECheckBoxState SMyTilesSettingItem::IsSelected()const 
+{
+	return WFCAsset->SaveAsTexture[BrushIndex] ? ECheckBoxState::Checked : ECheckBoxState::Unchecked;
+}
 
 void SMyTilesSettingItem::OnTextCommit(const FText& InText, ETextCommit::Type InCommitInfo)
 {

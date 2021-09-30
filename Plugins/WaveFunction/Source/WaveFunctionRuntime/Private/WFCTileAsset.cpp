@@ -360,19 +360,38 @@ void UWFCTileAsset::SaveRoadInfo()
 	FString AssetPath = this->GetPathName();
 	UE_LOG(LogTemp, Warning, TEXT("path = %s"), &AssetPath);
 
-	UTexture2D* RoadInfoTexture;
-	RoadInfoTexture = NewObject<UTexture2D>(this);
+	//UTexture2D* RoadInfoTexture;
+	//RoadInfoTexture = NewObject<UTexture2D>(this);
+	FString TextureName = TEXT("RoadInfo");
+	UTexture2D* RoadInfoTexture = NewObject<UTexture2D>(GetPackage(), *TextureName, RF_Public | RF_Standalone | RF_MarkAsRootSet);
 
 	RoadInfoTexture->PlatformData = new FTexturePlatformData();
-	RoadInfoTexture->PlatformData->SizeX = 1024;
-	RoadInfoTexture->PlatformData->SizeY = 1024;
+	RoadInfoTexture->PlatformData->SizeX = TileSize * OutputRows;
+	RoadInfoTexture->PlatformData->SizeY = TileSize * OutputColumns;
 	RoadInfoTexture->Filter = TextureFilter::TF_Nearest;
 	RoadInfoTexture->MipGenSettings = TMGS_NoMipmaps;
 
-
 	int32 TextureX = RoadInfoTexture->PlatformData->SizeX;
 	int32 TextureY = RoadInfoTexture->PlatformData->SizeY;
-	FLinearColor InColor = FLinearColor(1.0, 0.0, 0.0, 1.0);
+
+	TArray<TArray<FColor>> InColor;
+	for (int c=0; c<OutputColumns; c++)
+	{
+		for (int y = 0; y < TileSize; y++)
+		{
+			TArray<FColor> TmpColor;
+			for (int r = 0; r < OutputRows; r++)
+			{
+				TArray<FColor> Pixels = ReadPixelsFromTexture(y, OutputTileInfoList[r][c].index);
+				for (int i = 0; i < Pixels.Num(); i++)
+				{
+					TmpColor.Add(Pixels[i]);
+				}
+			}
+			InColor.Add(TmpColor);
+		}
+	}
+
 	RoadInfoTexture->PlatformData->PixelFormat = EPixelFormat::PF_B8G8R8A8;
 
 	TextureCompressionSettings OldCompressionSettings = RoadInfoTexture->CompressionSettings;
@@ -392,10 +411,10 @@ void UWFCTileAsset::SaveRoadInfo()
 			int32 curPixelIndex = ((y * TextureX) + x);
 			//这里可以设置4个通道的值
 			//这里需要考虑像素格式，之前设置了PF_B8G8R8A8，那么这里通道的顺序就是BGRA
-			Pixels[4 * curPixelIndex] = InColor.R;
-			Pixels[4 * curPixelIndex + 1] = InColor.G;
-			Pixels[4 * curPixelIndex + 2] = InColor.B;
-			Pixels[4 * curPixelIndex + 3] = InColor.A;
+			Pixels[4 * curPixelIndex] = InColor[x][y].B;
+			Pixels[4 * curPixelIndex + 1] = InColor[x][y].G;
+			Pixels[4 * curPixelIndex + 2] = InColor[x][y].R;
+			Pixels[4 * curPixelIndex + 3] = InColor[x][y].A;
 		}
 	}
 	//创建第一个MipMap
@@ -461,6 +480,7 @@ void UWFCTileAsset::ReFillBrushes()
 {
 	BrushesInput.Empty();
 	BrushesOutput.Empty();
+	SaveAsTexture.Empty();
 
 	for (auto Texture : InputRes)
 	{
@@ -476,6 +496,7 @@ void UWFCTileAsset::ReFillBrushes()
 			TempBrushOutput.SetResourceObject(Texture);
 			TempBrushOutput.ImageSize = FVector2D(BrushSize, BrushSize);
 			BrushesOutput.Add(TempBrushOutput);
+			SaveAsTexture.Add(false);
 		}
 	}
 	ReFillInputBrushesWithRot();
@@ -484,6 +505,24 @@ void UWFCTileAsset::ReFillBrushes()
 	PropertyChangeOutput.Broadcast();
 }
 
+
+void UWFCTileAsset::ReFillBrushesMask()
+{
+	BrushesInputMask.Empty();
+
+	for (auto Texture : InputMaskRes)
+	{
+		if (Texture)
+		{
+			FSlateBrush TempBrushInput;
+			TempBrushInput.SetResourceObject(Texture);
+			//Brush.ImageSize = FVector2D(Texture->GetSizeX(), Texture->GetSizeY());
+			TempBrushInput.ImageSize = FVector2D(64, 64);
+			BrushesInputMask.Add(TempBrushInput);
+		}
+	}
+	PropertyChangeInput.Broadcast();
+}
 
 void UWFCTileAsset::ReFillInputBrushesWithRot()
 {
@@ -635,6 +674,16 @@ FSlateBrush* UWFCTileAsset::GetBrushInputByIndex(int32 Index)
 	if (BrushesInput.IsValidIndex(Index))
 	{
 		return &BrushesInput[Index];
+	}
+
+	return nullptr;
+}
+
+FSlateBrush* UWFCTileAsset::GetBrushInputMaskByIndex(int32 Index)
+{
+	if (BrushesInputMask.IsValidIndex(Index))
+	{
+		return &BrushesInputMask[Index];
 	}
 
 	return nullptr;
@@ -797,6 +846,50 @@ FTilesInfo UWFCTileAsset::TileRot90(FTilesInfo InTile)
 	return Tmp;
 }
 
+TArray<FColor> UWFCTileAsset::ReadPixelsFromTexture(int InY, int Index)
+{
+	TArray<FColor> Pixels;
+
+	if (!SaveAsTexture[Index])
+	{
+		for (int32 X = 0; X < TileSize; X++)
+		{
+			FColor PixelColor = FColor(0, 0, 0, 0);
+			//做若干操作
+			Pixels.Add(PixelColor);
+		}
+		return Pixels;
+	}
+
+	UTexture2D* InTexture = InputMaskRes[Index];
+
+	TextureCompressionSettings OldCompressionSettings = InTexture->CompressionSettings;
+	TextureMipGenSettings OldMipGenSettings = InTexture->MipGenSettings;
+	bool OldSRGB = InTexture->SRGB;
+
+	InTexture->CompressionSettings = TextureCompressionSettings::TC_VectorDisplacementmap;
+	InTexture->MipGenSettings = TextureMipGenSettings::TMGS_NoMipmaps;
+	InTexture->SRGB = false;
+	InTexture->UpdateResource();
+
+	const FColor* FormatedImageData = static_cast<const FColor*>(InTexture->PlatformData->Mips[0].BulkData.LockReadOnly());
+
+	for (int32 X = 0; X < InTexture->PlatformData->SizeX; X++)
+	{
+		FColor PixelColor = FormatedImageData[InY * InTexture->PlatformData->SizeX + X];
+		//做若干操作
+		Pixels.Add(PixelColor);
+	}
+
+	InTexture->PlatformData->Mips[0].BulkData.Unlock();
+
+	InTexture->CompressionSettings = OldCompressionSettings;
+	InTexture->MipGenSettings = OldMipGenSettings;
+	InTexture->SRGB = OldSRGB;
+	InTexture->UpdateResource();
+	return Pixels;
+}
+
 void UWFCTileAsset::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 {
 	Super::PostEditChangeProperty(PropertyChangedEvent);
@@ -819,6 +912,10 @@ void UWFCTileAsset::PostEditChangeProperty(FPropertyChangedEvent& PropertyChange
 		if (PropertyChangedEvent.Property->GetFName() == GET_MEMBER_NAME_CHECKED(UWFCTileAsset, Symmetrys))
 		{
 			PropertyChangeInput.Broadcast();
+		}
+		if (PropertyChangedEvent.Property->GetFName() == GET_MEMBER_NAME_CHECKED(UWFCTileAsset, InputMaskRes))
+		{
+			ReFillBrushesMask();
 		}
 	}
 }

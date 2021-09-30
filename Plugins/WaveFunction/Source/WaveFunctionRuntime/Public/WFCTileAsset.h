@@ -18,6 +18,8 @@ public:
 	void InitResBase(TArray<FAssetData>& InResBase);
 	void InitSetting();
 	void ReFillBrushes();
+	void ReFillBrushesMask();
+
 	void ReFillInputBrushesWithRot();
 
 	void ReFillSymmetrysAndFrequencys();
@@ -30,6 +32,8 @@ public:
 
 	virtual void BrushSizeChange(FString ChangeType = "Add") override;
 	FSlateBrush* GetBrushInputByIndex(int32 Index);
+	FSlateBrush* GetBrushInputMaskByIndex(int32 Index);
+
 	FSlateBrush* GetBrushInputByTileIndex(int32 Index);
 	FSlateBrush* GetBrushOutputByRowAndCloumns(int32 r, int32 c);
 	ETileRot GetOutputTileRotByRowAndCloumns(int32 r, int32 c);
@@ -53,6 +57,8 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WFCInput")
 	TArray<UTexture2D*> InputRes;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WFCInput")
+	TArray<UTexture2D*> InputMaskRes;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WFCInput")
 	TArray<ESymmetry> Symmetrys;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WFCInput")
 	TArray<float> Frequencys;
@@ -68,6 +74,8 @@ public:
 	int32 OutputRows = 10;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WFCOutput")
 	int32 OutputColumns = 10;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WFCOutput")
+	int32 TileSize = 64;
 	UPROPERTY()
 	int32 BrushSize = 64;
 
@@ -77,11 +85,14 @@ public:
 	class SMyOutputTileItem* LastSelected;
 	/**/
 	TArray<FTilesInfo> InputTileInfoList;
-	
+	TArray<bool> SaveAsTexture;
+
 
 private:
 	/**/
 	TArray<FSlateBrush> BrushesInput;
+	TArray<FSlateBrush> BrushesInputMask;
+
 	TArray<FSlateBrush> BrushesOutput;
 	TArray<TArray<FTilesInfo>> OutputTileInfoList;
 	TArray<TArray<TArray<FTilesInfo>>> OutputTilesMaybe;
@@ -108,5 +119,5 @@ private:
 
 	FTilesInfo TileRot180(FTilesInfo InTile);
 	FTilesInfo TileRot90(FTilesInfo InTile);
-	
+	TArray<FColor> ReadPixelsFromTexture(int InY, int Index);
 };

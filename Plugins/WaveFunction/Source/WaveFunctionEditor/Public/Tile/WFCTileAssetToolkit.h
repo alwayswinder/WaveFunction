@@ -7,6 +7,7 @@
 
 class UWFCTileAsset;
 class SScrollBox;
+enum class ECheckBoxState : uint8;
 
 class SMyOutputTileItem : public SCompoundWidget
 {
@@ -52,7 +53,8 @@ protected:
 	void ComboBoxWidgetSelectionChanged(TSharedPtr<FString> NewSelection, ESelectInfo::Type SelectInfo);
 	TSharedRef<SWidget> ComboBoxDetailFilterWidget(TSharedPtr<FString> InItem);
 	FText GetSelectedComboBoxDetailFilterTextLabel() const;
-
+	void OnSaveAsTextureSelectedChange(ECheckBoxState NewState);
+	ECheckBoxState IsSelected()const;
 	void OnTextCommit(const FText& InText, ETextCommit::Type InCommitInfo);
 	FText GetFrequencyText()const;
 
