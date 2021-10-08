@@ -759,21 +759,21 @@ void SMyTilesSettingItem::Construct(const FArguments& InArgs)
 			SNew(SHorizontalBox)
 			+SHorizontalBox::Slot()
 			.AutoWidth()
-			.Padding(2)
+			.Padding(4)
 			[
 				SNew(SImage)
 				.Image(WFCAsset->GetBrushInputByIndex(BrushIndex))
 			]
 			+ SHorizontalBox::Slot()
 			.AutoWidth()
-			.Padding(2)
+			.Padding(4)
 			[
 				SNew(SImage)
 				.Image(WFCAsset->GetBrushInputMaskByIndex(BrushIndex))
 			]
 			+ SHorizontalBox::Slot()
 			.VAlign(VAlign_Center)
-			.Padding(2)
+			.Padding(4)
 			[
 				SAssignNew(Combox, SComboBox<TSharedPtr<FString>>)
 				.OptionsSource(&ComboBoxFilterOptions)
@@ -787,7 +787,7 @@ void SMyTilesSettingItem::Construct(const FArguments& InArgs)
 			]
 			+ SHorizontalBox::Slot()
 			.AutoWidth()
-			.Padding(2)
+			.Padding(4)
 			[
 				SNew(SInlineEditableTextBlock)
 				.OnTextCommitted(this, &SMyTilesSettingItem::OnTextCommit)
@@ -795,7 +795,7 @@ void SMyTilesSettingItem::Construct(const FArguments& InArgs)
 			]
 			+ SHorizontalBox::Slot()
 			.AutoWidth()
-			.Padding(2)
+			.Padding(4)
 			[
 				SNew(SCheckBox)
 				.IsChecked(this, &SMyTilesSettingItem::IsSelected)

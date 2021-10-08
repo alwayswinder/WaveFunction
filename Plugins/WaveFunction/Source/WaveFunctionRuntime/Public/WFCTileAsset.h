@@ -98,6 +98,7 @@ private:
 	TArray<TArray<TArray<FTilesInfo>>> OutputTilesMaybe;
 	TArray<int32> OutputTimesApear;
 	TArray<float> OutputFresuqnceShould;
+	TArray<TArray<TArray<FColor>>> InputMaskInfo;
 
 	int32 RowNext;
 	int32 ColumnNext;
@@ -119,5 +120,6 @@ private:
 
 	FTilesInfo TileRot180(FTilesInfo InTile);
 	FTilesInfo TileRot90(FTilesInfo InTile);
-	TArray<FColor> ReadPixelsFromTexture(int InY, int Index);
+	void ReadPixelsFromTexture();
+	TArray<FColor> GetPixelsFromInfoSaved(int32 Index, int32 InY, ETileRot InRot);
 };

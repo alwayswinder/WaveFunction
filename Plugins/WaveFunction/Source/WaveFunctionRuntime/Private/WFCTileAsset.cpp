@@ -59,6 +59,7 @@ void UWFCTileAsset::InitSetting()
 	}
 	OutputInitBrush.ImageSize = FVector2D(BrushSize, BrushSize);
 	ReFillBrushes();	
+	ReFillBrushesMask();
 }
 
 FSlateBrush* UWFCTileAsset::GetBrushInputByTileIndex(int32 Index)
@@ -382,7 +383,7 @@ void UWFCTileAsset::SaveRoadInfo()
 			TArray<FColor> TmpColor;
 			for (int r = 0; r < OutputRows; r++)
 			{
-				TArray<FColor> Pixels = ReadPixelsFromTexture(y, OutputTileInfoList[r][c].index);
+				TArray<FColor> Pixels = GetPixelsFromInfoSaved(OutputTileInfoList[r][c].index, y, OutputTileInfoList[r][c].Rot);
 				for (int i = 0; i < Pixels.Num(); i++)
 				{
 					TmpColor.Add(Pixels[i]);
@@ -496,7 +497,7 @@ void UWFCTileAsset::ReFillBrushes()
 			TempBrushOutput.SetResourceObject(Texture);
 			TempBrushOutput.ImageSize = FVector2D(BrushSize, BrushSize);
 			BrushesOutput.Add(TempBrushOutput);
-			SaveAsTexture.Add(false);
+			SaveAsTexture.Add(true);
 		}
 	}
 	ReFillInputBrushesWithRot();
@@ -521,6 +522,8 @@ void UWFCTileAsset::ReFillBrushesMask()
 			BrushesInputMask.Add(TempBrushInput);
 		}
 	}
+	ReadPixelsFromTexture();
+
 	PropertyChangeInput.Broadcast();
 }
 
@@ -846,47 +849,86 @@ FTilesInfo UWFCTileAsset::TileRot90(FTilesInfo InTile)
 	return Tmp;
 }
 
-TArray<FColor> UWFCTileAsset::ReadPixelsFromTexture(int InY, int Index)
+void UWFCTileAsset::ReadPixelsFromTexture()
+{
+	InputMaskInfo.Empty();
+	for (int i = 0; i < InputMaskRes.Num(); i++)
+	{
+		UTexture2D* InTexture = InputMaskRes[i];
+		if (InTexture)
+		{
+			TextureCompressionSettings OldCompressionSettings = InTexture->CompressionSettings;
+			TextureMipGenSettings OldMipGenSettings = InTexture->MipGenSettings;
+			bool OldSRGB = InTexture->SRGB;
+
+			InTexture->CompressionSettings = TextureCompressionSettings::TC_VectorDisplacementmap;
+			InTexture->MipGenSettings = TextureMipGenSettings::TMGS_NoMipmaps;
+			InTexture->SRGB = false;
+			InTexture->UpdateResource();
+
+			TArray<TArray<FColor>> TextureColors;
+			const FColor* FormatedImageData = static_cast<const FColor*>(InTexture->PlatformData->Mips[0].BulkData.LockReadOnly());
+			for (int32 Y = 0; Y < InTexture->PlatformData->SizeY; Y++)
+			{
+				TArray<FColor> Pixels;
+				for (int32 X = 0; X < InTexture->PlatformData->SizeX; X++)
+				{
+					FColor PixelColor = FormatedImageData[Y * InTexture->PlatformData->SizeX + X];
+					//做若干操作
+					Pixels.Add(PixelColor);
+				}
+				TextureColors.Add(Pixels);
+			}
+
+			InTexture->PlatformData->Mips[0].BulkData.Unlock();
+
+			InTexture->CompressionSettings = OldCompressionSettings;
+			InTexture->MipGenSettings = OldMipGenSettings;
+			InTexture->SRGB = OldSRGB;
+			InTexture->UpdateResource();
+			InputMaskInfo.Add(TextureColors);
+		}
+	}
+}
+
+TArray<FColor> UWFCTileAsset::GetPixelsFromInfoSaved(int32 Index, int32 InY, ETileRot InRot)
 {
 	TArray<FColor> Pixels;
-
-	if (!SaveAsTexture[Index])
+	for (int i=0; i<TileSize; i++)
 	{
-		for (int32 X = 0; X < TileSize; X++)
+		Pixels.Add(FColor(0, 0, 0, 0));
+	}
+	if (SaveAsTexture[Index] && InputMaskInfo.IsValidIndex(Index))
+	{
+		switch (InRot)
 		{
-			FColor PixelColor = FColor(0, 0, 0, 0);
-			//做若干操作
-			Pixels.Add(PixelColor);
+		case ETileRot::nine:
+			for (int j = 0; j < TileSize; j++)
+			{
+				Pixels[j] = InputMaskInfo[Index][TileSize - 1 - InY][j];
+			}
+			break;
+		case ETileRot::OneEight:
+			for (int j = 0; j < TileSize; j++)
+			{
+				Pixels[j] = InputMaskInfo[Index][TileSize -1 - j][TileSize - 1 - InY];
+			}
+			break;
+		case ETileRot::TowSeven:
+			for (int j = 0; j < TileSize; j++)
+			{
+				Pixels[j] = InputMaskInfo[Index][InY][TileSize - 1 - j];
+			}
+			break;
+		case ETileRot::None:
+		default:
+			for (int j = 0; j < TileSize; j++)
+			{
+				Pixels[j] = InputMaskInfo[Index][j][InY];
+			}
+			break;
 		}
-		return Pixels;
 	}
-
-	UTexture2D* InTexture = InputMaskRes[Index];
-
-	TextureCompressionSettings OldCompressionSettings = InTexture->CompressionSettings;
-	TextureMipGenSettings OldMipGenSettings = InTexture->MipGenSettings;
-	bool OldSRGB = InTexture->SRGB;
-
-	InTexture->CompressionSettings = TextureCompressionSettings::TC_VectorDisplacementmap;
-	InTexture->MipGenSettings = TextureMipGenSettings::TMGS_NoMipmaps;
-	InTexture->SRGB = false;
-	InTexture->UpdateResource();
-
-	const FColor* FormatedImageData = static_cast<const FColor*>(InTexture->PlatformData->Mips[0].BulkData.LockReadOnly());
-
-	for (int32 X = 0; X < InTexture->PlatformData->SizeX; X++)
-	{
-		FColor PixelColor = FormatedImageData[InY * InTexture->PlatformData->SizeX + X];
-		//做若干操作
-		Pixels.Add(PixelColor);
-	}
-
-	InTexture->PlatformData->Mips[0].BulkData.Unlock();
-
-	InTexture->CompressionSettings = OldCompressionSettings;
-	InTexture->MipGenSettings = OldMipGenSettings;
-	InTexture->SRGB = OldSRGB;
-	InTexture->UpdateResource();
 	return Pixels;
 }
 
