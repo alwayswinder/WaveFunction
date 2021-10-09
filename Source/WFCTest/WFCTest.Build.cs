@@ -10,12 +10,21 @@ public class WFCTest : ModuleRules
 	
 		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore" });
 
-		PrivateDependencyModuleNames.AddRange(new string[] {  });
+		PrivateDependencyModuleNames.AddRange(new string[] {            
+                "GameplayAbilities",
+                "GameplayTags",
+                "GameplayTasks",
+        });
 
         PrivateIncludePaths.AddRange(
             new string[] {
 				// ... add other private include paths required here ...
 				"WFCTest/Public/GameCore",
+                "WFCTest/Public/Character",
+                "WFCTest/Public/Character/Abilities",
+                "WFCTest/Public/Character/Monster",
+                "WFCTest/Public/Character/Player",
+
             }
             );
         // Uncomment if you are using Slate UI

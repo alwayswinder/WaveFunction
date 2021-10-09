@@ -393,6 +393,44 @@ void UWFCTileAsset::SaveRoadInfo()
 		}
 	}
 
+	TArray<TArray<FColor>> ResultColors;
+	int Offset = BlurOffSet;
+	int Sumnum = (Offset * 2 + 1) * (Offset * 2 + 1);
+
+	for (int x = 0; x < InColor.Num(); x++)
+	{
+		TArray<FColor> Pixels;
+		for (int y = 0; y < InColor[x].Num(); y++)
+		{
+			FColor CompositeColor;
+			int R = 0;
+			int G = 0;
+			int B = 0;
+			int A = 0;
+
+			for (int c = x - Offset; c < x + Offset; c++)
+			{
+				for (int r = y - Offset; r < y + Offset; r++)
+				{
+					if (InColor.IsValidIndex(c) && InColor[c].IsValidIndex(r))
+					{
+						R += InColor[c][r].R;
+						G += InColor[c][r].G;
+						B += InColor[c][r].B;
+						A += InColor[c][r].A;
+					}
+				}
+			}
+			CompositeColor.R = R / Sumnum;
+			CompositeColor.G = G / Sumnum;
+			CompositeColor.B = B / Sumnum;
+			CompositeColor.A = A / Sumnum;
+
+			Pixels.Add(CompositeColor);
+		}
+		ResultColors.Add(Pixels);
+	}
+
 	RoadInfoTexture->PlatformData->PixelFormat = EPixelFormat::PF_B8G8R8A8;
 
 	TextureCompressionSettings OldCompressionSettings = RoadInfoTexture->CompressionSettings;
@@ -412,10 +450,10 @@ void UWFCTileAsset::SaveRoadInfo()
 			int32 curPixelIndex = ((y * TextureX) + x);
 			//这里可以设置4个通道的值
 			//这里需要考虑像素格式，之前设置了PF_B8G8R8A8，那么这里通道的顺序就是BGRA
-			Pixels[4 * curPixelIndex] = InColor[x][y].B;
-			Pixels[4 * curPixelIndex + 1] = InColor[x][y].G;
-			Pixels[4 * curPixelIndex + 2] = InColor[x][y].R;
-			Pixels[4 * curPixelIndex + 3] = InColor[x][y].A;
+			Pixels[4 * curPixelIndex] = ResultColors[x][y].B;
+			Pixels[4 * curPixelIndex + 1] = ResultColors[x][y].G;
+			Pixels[4 * curPixelIndex + 2] = ResultColors[x][y].R;
+			Pixels[4 * curPixelIndex + 3] = ResultColors[x][y].A;
 		}
 	}
 	//创建第一个MipMap
@@ -875,18 +913,21 @@ void UWFCTileAsset::ReadPixelsFromTexture()
 				{
 					FColor PixelColor = FormatedImageData[Y * InTexture->PlatformData->SizeX + X];
 					//做若干操作
+					if (PixelColor != FColor(0, 0, 0, 0))
+					{
+						PixelColor = FColor(255, 255, 255, 255);
+					}
 					Pixels.Add(PixelColor);
 				}
 				TextureColors.Add(Pixels);
 			}
+			InputMaskInfo.Add(TextureColors);
 
 			InTexture->PlatformData->Mips[0].BulkData.Unlock();
-
 			InTexture->CompressionSettings = OldCompressionSettings;
 			InTexture->MipGenSettings = OldMipGenSettings;
 			InTexture->SRGB = OldSRGB;
 			InTexture->UpdateResource();
-			InputMaskInfo.Add(TextureColors);
 		}
 	}
 }

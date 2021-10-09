@@ -76,6 +76,8 @@ public:
 	int32 OutputColumns = 10;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WFCOutput")
 	int32 TileSize = 64;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WFCOutput")
+	int32 BlurOffSet = 3;
 	UPROPERTY()
 	int32 BrushSize = 64;
 
