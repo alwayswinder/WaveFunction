@@ -78,6 +78,8 @@ public:
 	int32 TileSize = 64;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WFCOutput")
 	int32 BlurOffSet = 3;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WFCOutput")
+	int32 RandomRate = 30;
 	UPROPERTY()
 	int32 BrushSize = 64;
 

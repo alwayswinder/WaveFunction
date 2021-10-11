@@ -323,7 +323,7 @@ void UWFCTileAsset::OnOutputGenerate()
 		float FrequenceNow = 1.0f * OutputTimesApear[index] / (OutputRows * OutputColumns);
 		float FrequenceShould = OutputFresuqnceShould[index] / SumFrequency;
 		float FreTmp = FrequenceNow / FrequenceShould;
-		if (FreTmp < MinFrequency)
+		if (FreTmp < MinFrequency && FMath::RandHelper(100) > RandomRate)
 		{
 			MinFrequency = FrequenceNow / FrequenceShould;
 			indexSelect = i;
