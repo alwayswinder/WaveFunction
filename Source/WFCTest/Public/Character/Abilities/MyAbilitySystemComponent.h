@@ -13,4 +13,8 @@ class UMyAbilitySystemComponent : public UAbilitySystemComponent
 
 public:
 	UMyAbilitySystemComponent();
+
+	bool bCharacterAbilitiesGiven = false;
+
+
 };

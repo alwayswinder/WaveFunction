@@ -16,13 +16,39 @@ public:
 	// Sets default values for this character's properties
 	AMyCharacter();
 	virtual class UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+
+	UFUNCTION(BlueprintCallable, Category = "MyCharacter")
+	virtual bool IsAlive() const;
+
+	UFUNCTION(BlueprintCallable, Category = "MyCharacter")
+	float GetHealth() const;
+
+	UFUNCTION(BlueprintCallable, Category = "MyCharacter|Attributes")
+	int32 GetCharacterLevel() const;
+
+	UFUNCTION(BlueprintCallable, Category = "MyCharacter|Attributes")
+	virtual int32 GetAbilityLevel(EMyAbilityInputID AbilityID) const;
+
 protected:
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "MyCharacter|Abilities")
+	TSubclassOf<class UGameplayEffect> DefaultAttributes;
+
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "MyCharacter|Abilities")
+	TArray<TSubclassOf<class UMyGameplayAbility>> CharacterAbilities;
 
 	UPROPERTY()
 	class UMyAbilitySystemComponent* AbilitySystemComponent;
 
+	UPROPERTY()
+	class UMyAttributeSetBase* AttributeSetBase;
+
+	/**/
+	// Called when the game starts or when spawned
+	virtual void BeginPlay() override;
+
+	virtual void InitializeAttributes();
+
+	virtual void AddCharacterAbilities();
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;

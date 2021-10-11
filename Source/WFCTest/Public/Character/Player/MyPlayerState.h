@@ -19,8 +19,12 @@ public:
 
 	// Implement IAbilitySystemInterface
 	class UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+	class UMyAttributeSetBase* GetAttributeSetBase() const;
+
 
 protected:
 	UPROPERTY()
 	class UMyAbilitySystemComponent* AbilitySystemComponent;
+	UPROPERTY()
+	class UMyAttributeSetBase* AttributeSetBase;
 };
