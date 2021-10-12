@@ -7,7 +7,6 @@
 #include "MyCharacter.h"
 #include "MyPlayerCharacter.generated.h"
 
-
 UCLASS()
 class WFCTEST_API AMyPlayerCharacter : public AMyCharacter
 {
@@ -24,7 +23,6 @@ public:
 
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-	virtual void PossessedBy(AController* NewController) override;
 
 protected:
 	/*Value*/
@@ -32,6 +30,8 @@ protected:
 	float BaseTurnRate;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "MyCharacter|Player|Camera")
 	float BaseLookUpRate;
+
+	bool bASCInputBound;
 
 	/*Function*/
 	// Called when the game starts or when spawned
@@ -48,6 +48,9 @@ protected:
 	void MoveForward(float Value);
 	// Mouse + Gamepad
 	void MoveRight(float Value);
+
+	void BindASCInput();
+
 
 private:
 

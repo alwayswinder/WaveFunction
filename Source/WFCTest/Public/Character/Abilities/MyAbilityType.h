@@ -10,4 +10,6 @@ enum class EMyAbilityInputID : uint8
 	// 0 None
 	None				UMETA(DisplayName = "None"),
 	Attack				UMETA(DisplayName = "Attack"),
+	Confirm				UMETA(DisplayName = "Confirm"),
+	Cancel				UMETA(DisplayName = "Cancel"),
 };

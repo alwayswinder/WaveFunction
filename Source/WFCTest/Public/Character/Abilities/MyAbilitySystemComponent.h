@@ -12,9 +12,10 @@ class UMyAbilitySystemComponent : public UAbilitySystemComponent
 	GENERATED_BODY()
 
 public:
-	UMyAbilitySystemComponent();
-
 	bool bCharacterAbilitiesGiven = false;
 
+	UMyAbilitySystemComponent();
 
+	virtual void AbilityLocalInputPressed(int32 InputID) override;
+	
 };

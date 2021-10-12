@@ -13,5 +13,6 @@ UCLASS()
 class WFCTEST_API AMyAIController : public AAIController
 {
 	GENERATED_BODY()
-	
+public:
+	AMyAIController();
 };

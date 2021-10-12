@@ -20,4 +20,7 @@ public:
 
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Ability")
 	EMyAbilityInputID AbilityID = EMyAbilityInputID::None;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Ability")
+	bool bActivateOnInput;
 };

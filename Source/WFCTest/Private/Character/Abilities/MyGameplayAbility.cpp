@@ -4,6 +4,6 @@
 
 UMyGameplayAbility::UMyGameplayAbility()
 {
-
+	bActivateOnInput = true;
 }
 

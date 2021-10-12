@@ -7,7 +7,7 @@
 #include "MyPlayerState.h"
 #include "MyAbilitySystemComponent.h"
 #include "MyAttributeSetBase.h"
-
+#include "MyAbilityType.h"
 
 // Sets default values
 AMyPlayerCharacter::AMyPlayerCharacter()
@@ -16,6 +16,7 @@ AMyPlayerCharacter::AMyPlayerCharacter()
 	PrimaryActorTick.bCanEverTick = true;
 	BaseTurnRate = 45.0f;
 	BaseLookUpRate = 45.0f;
+	bASCInputBound = false;
 }
 
 // Called when the game starts or when spawned
@@ -59,7 +60,7 @@ void AMyPlayerCharacter::TurnRate(float Value)
 
 void AMyPlayerCharacter::MoveForward(float Value)
 {
-	if (IsAlive())
+	if (IsAlive() && !BlockMove)
 	{
 		AddMovementInput(UKismetMathLibrary::GetForwardVector(FRotator(0, GetControlRotation().Yaw, 0)), Value);
 	}
@@ -67,9 +68,20 @@ void AMyPlayerCharacter::MoveForward(float Value)
 
 void AMyPlayerCharacter::MoveRight(float Value)
 {
-	if (IsAlive())
+	if (IsAlive() && !BlockMove)
 	{
 		AddMovementInput(UKismetMathLibrary::GetRightVector(FRotator(0, GetControlRotation().Yaw, 0)), Value);
+	}
+}
+
+void AMyPlayerCharacter::BindASCInput()
+{
+	if (!bASCInputBound && IsValid(AbilitySystemComponent) && IsValid(InputComponent))
+	{
+		AbilitySystemComponent->BindAbilityActivationToInputComponent(InputComponent, FGameplayAbilityInputBinds(FString("ConfirmTarget"),
+			FString("CancelTarget"), FString("EMyAbilityInputID"), static_cast<int32>(EMyAbilityInputID::Confirm), static_cast<int32>(EMyAbilityInputID::Cancel)));
+
+		bASCInputBound = true;
 	}
 }
 
@@ -92,21 +104,8 @@ void AMyPlayerCharacter::SetupPlayerInputComponent(class UInputComponent* Player
 	PlayerInputComponent->BindAxis("LookUpRate", this, &AMyPlayerCharacter::LookUpRate);
 	PlayerInputComponent->BindAxis("Turn", this, &AMyPlayerCharacter::Turn);
 	PlayerInputComponent->BindAxis("TurnRate", this, &AMyPlayerCharacter::TurnRate);
+
+	BindASCInput();
 }
 
-void AMyPlayerCharacter::PossessedBy(AController* NewController)
-{
-	Super::PossessedBy(NewController);
-	AMyPlayerState* PS = GetPlayerState<AMyPlayerState>();
-	if (PS)
-	{
-		AbilitySystemComponent = Cast<UMyAbilitySystemComponent>(PS->GetAbilitySystemComponent());
-		PS->GetAbilitySystemComponent()->InitAbilityActorInfo(PS, this);
-		AttributeSetBase = PS->GetAttributeSetBase();
-
-		InitializeAttributes();
-
-		AddCharacterAbilities();
-	}
-}
 

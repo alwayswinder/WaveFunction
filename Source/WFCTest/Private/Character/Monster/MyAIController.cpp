@@ -3,3 +3,7 @@
 
 #include "Character/Monster/MyAIController.h"
 
+AMyAIController::AMyAIController()
+{
+	bWantsPlayerState = true;
+}
